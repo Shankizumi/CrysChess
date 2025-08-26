@@ -5,7 +5,7 @@
   align-items: center;
   height: 100vh;
   flex-direction: column;
-  background: radial-gradient(circle at center, #111 0%, #000 100%);
+  /* background: radial-gradient(circle at center, #111 0%, #000 100%); */
   color: white;
   font-family: "Trebuchet MS", sans-serif;
 }
@@ -84,9 +84,15 @@
 }
 
 @keyframes quardPulse {
-  0% { transform: scale(1);  }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ================== STAR CRYSTAL ================== */
@@ -94,40 +100,73 @@
 .piece.blue-star {
   border-radius: 0 !important;
   clip-path: polygon(
-    100% 50%, 85.36% 85.36%, 50% 100%, 14.64% 85.36%, 
-    0% 50%, 14.64% 14.64%, 50% 0%, 85.36% 14.64%
+    100% 50%,
+    85.36% 85.36%,
+    50% 100%,
+    14.64% 85.36%,
+    0% 50%,
+    14.64% 14.64%,
+    50% 0%,
+    85.36% 14.64%
   );
-  width: 42px; height: 42px;
+  width: 42px;
+  height: 42px;
   border: 3px solid white;
   animation: starGlow 1.5s infinite ease-in-out;
 }
 
-.piece.red-star { background: linear-gradient(145deg, #ff6b6b, #ff0000); }
-.piece.blue-star { background: linear-gradient(145deg, #6baaff, #0033ff); }
+.piece.red-star {
+  background: linear-gradient(145deg, #ff6b6b, #ff0000);
+}
+.piece.blue-star {
+  background: linear-gradient(145deg, #6baaff, #0033ff);
+}
 
 @keyframes starGlow {
-  0% { transform: scale(1); box-shadow: 0 0 8px white; }
-  50% { transform: scale(1.2); box-shadow: 0 0 20px white; }
-  100% { transform: scale(1); box-shadow: 0 0 8px white; }
-
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 8px white;
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px white;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px white;
+  }
 }
 
 /* ================== HEXA CRYSTAL ================== */
 .piece.red-hexa,
 .piece.blue-hexa {
-  width: 42px; height: 42px;
+  width: 42px;
+  height: 42px;
   clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0% 50%);
   border: 4px solid white;
   animation: hexaPulse 1.5s infinite ease-in-out;
 }
 
-.piece.red-hexa { background: linear-gradient(145deg, #ff4d4d, #ff4d4d); }
-.piece.blue-hexa { background: linear-gradient(145deg, #66aaff, #003399); }
+.piece.red-hexa {
+  background: linear-gradient(145deg, #ff4d4d, #ff4d4d);
+}
+.piece.blue-hexa {
+  background: linear-gradient(145deg, #66aaff, #003399);
+}
 
 @keyframes hexaPulse {
-   0% { transform: scale(1); box-shadow: 0 0 8px white; }
-  50% { transform: scale(1.2); box-shadow: 0 0 20px white; }
-  100% { transform: scale(1); box-shadow: 0 0 8px white; }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 8px white;
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px white;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px white;
+  }
 }
 
 /* ================== EFFECTS ================== */
@@ -136,9 +175,18 @@
 }
 
 @keyframes destroyAnimation {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.6; }
-  100% { transform: scale(0); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
 }
 
 .selected {
@@ -151,5 +199,305 @@
 .turn-indicator {
   margin-top: 20px;
   font-size: 1.2rem;
-  text-shadow: 0 0 8px rgba(255,255,255,0.6);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+.winner-message {
+  margin-top: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: gold;
+  text-align: center;
+}
+
+/* ========= GAME LAYOUT ========= */
+.game-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background: url("https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0")
+    no-repeat center center/cover;
+  color: white;
+  font-family: "Trebuchet MS", sans-serif;
+  padding: 30px; /* more space around whole layout */
+  box-sizing: border-box;
+}
+
+/* ========= LEFT SIDE ========= */
+.sidebar-left {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+}
+
+.rules-btn {
+  background: #ffcc80;
+  color: #222;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: 0.2s;
+}
+.rules-btn:hover {
+  background: #ffb74d;
+}
+
+/* Floating cards */
+.rank-card,
+.profile-card {
+  background: rgba(0, 0, 0, 0.65);
+  padding: 22px 15px;
+  border-radius: 14px;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.profile-pic {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid white;
+  margin-bottom: 10px;
+  background: #444 url("https://tinyurl.com/mutwed53") center/cover no-repeat;
+}
+
+/* Bottom buttons */
+.bottom-buttons {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.logout-btn,
+.donate-btn {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.logout-btn {
+  background: crimson;
+  color: white;
+}
+.logout-btn:hover {
+  background: #e60026;
+}
+
+.donate-btn {
+  background: #28a745;
+  color: white;
+}
+.donate-btn:hover {
+  background: #218838;
+}
+
+/* ========= CENTER ========= */
+.game-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ========= RIGHT SIDE ========= */
+.sidebar-right {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* Chatbox */
+.chat-box {
+  display: flex;
+  flex-direction: column;
+  background: rgba(200, 200, 200, 0.15);
+  border-radius: 12px;
+  padding: 12px;
+  height: 280px; /* shorter, not full height */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.messages {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+/* Input row */
+.chat-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+}
+
+.chat-input button {
+  background: #00c853;
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: 0.2s;
+}
+.chat-input button:hover {
+  background: #009624;
+}
+
+/* Opponent Card */
+.opponent-card {
+  text-align: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.opponent-pic {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid white;
+  margin-bottom: 10px;
+  background: #444 url("https://tinyurl.com/mutwed53") center/cover no-repeat;
+}
+
+.friend-btn {
+  margin-top: 12px;
+  background: hotpink;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.friend-btn:hover {
+  background: deeppink;
+}
+
+small {
+  padding: 15px;
+}
+
+/* ===== Rules Modal ===== */
+.rules-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.65);
+  z-index: 1200;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.rules-modal-content {
+  position: relative;
+  width: min(880px, 96%);
+  max-height: 86vh;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 10, 20, 0.98),
+    rgba(18, 22, 34, 0.98)
+  );
+  color: #f7fafc;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  padding: 22px 24px;
+  box-sizing: border-box;
+  animation: modalPop 0.18s ease-out;
+}
+
+@keyframes modalPop {
+  from {
+    transform: scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.rules-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+.rules-modal h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  color: #fff;
+}
+.rules-body {
+  margin-top: 10px;
+  overflow-y: auto;
+  max-height: calc(86vh - 120px);
+  padding-right: 10px;
+}
+
+/* Lists inside modal */
+.rules-body h3 {
+  margin: 12px 0 8px;
+  color: #ffd;
+  font-size: 14px;
+}
+.rules-body ul,
+.rules-body ol {
+  margin-left: 18px;
+  margin-bottom: 8px;
+  color: #e6eef8;
+  line-height: 1.45;
+}
+.rules-body li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* small responsive tweak */
+@media (max-width: 640px) {
+  .rules-modal-content {
+    padding: 16px;
+  }
+  .rules-body {
+    max-height: calc(86vh - 120px);
+  }
 }

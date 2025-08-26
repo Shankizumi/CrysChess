@@ -4,15 +4,234 @@ import "./GameBoard.css";
 const BOARD_SIZE = 8;
 const ANIM_DURATION = 500;
 
-const GameBoard = () => {
+const RulesModal = ({ open, onClose }) => {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
+  if (!open) return null;
+  return (
+    <div
+      className="rules-modal"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="rules-modal-content">
+        <button
+          className="rules-modal-close"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          ×
+        </button>
+
+        <h2>Game Rules — Board Mechanics</h2>
+
+        <div className="rules-body">
+          <h3>Quick summary</h3>
+          <ul>
+
+            <li>
+              Turn-based: <b>red</b> starts first. Each successful move or
+              activation consumes the current player's turn.
+            </li>
+            <li>
+              Move: move orthogonally by 1 cell (up/down/left/right) into an
+              empty cell. Can move via click-selection, drag & drop, or arrow
+              keys.
+            </li>
+            <li>
+              Special stones: <b>triple (exact 3)</b>, <b>quad (exact 4)</b>,{" "}
+              <b>star (exact 5)</b>, <b>hexa (exact 6)</b>. Exact length
+              detection only — not part of longer runs.
+            </li>
+            <li>
+              Activation: double-click on your special stone to activate. 
+            </li>
+            <li>
+              Win: counts are checked after every change. If one player has &lt;
+              3 stones and the opponent has ≥ 3, the opponent wins. If both &lt;
+              3 → Draw.
+            </li>
+          </ul>
+
+          <h3>Detailed rules (how the code implements them)</h3>
+          <ol>
+            <li>
+              <b>Movement & selection</b>
+              <ul>
+                <li>
+                  Single click selects a piece. Click a valid neighbouring empty
+                  cell to move it.
+                </li>
+                <li>
+                  Keyboard: when a piece is selected, Arrow keys move it (if
+                  valid). Movement is allowed only if the piece belongs to the
+                  current player's color.
+                </li>
+                <li>
+                  Drag & drop is allowed for pieces owned by the current player.
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <b>Exact-run detection</b>
+              <ul>
+                <li>
+                  The game scans rows and columns for runs of exactly 3, 4, 5,
+                  or 6 stones of the same base color. 
+                </li>
+                <li>
+                  For <b>quad (4)</b>, <b>star (5)</b> and <b>hexa (6)</b>{" "}
+                  triggers, there must be an adjacent enemy stone immediately
+                  before or after the run — otherwise that run doesn't trigger
+                  anything.
+                </li>
+                <li>
+                  When an adjacent enemy exists on both ends, the code
+                  deterministically prefers the <b>after</b> side (right or
+                  down). If no after side, it uses before (left or up).
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <b>Triple (exact 3)</b>
+              <ul>
+                <li>
+                  Detected for exact 3 in a row/column (not part of longer run).
+                </li>
+                <li>
+                  Destroys enemy stones immediately adjacent to both ends of the
+                  triple (if present).
+                </li>
+                <li>
+                  No new special piece is spawned for triples — they just remove
+                  enemies at the ends.
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <b>Quad (exact 4)</b>
+              <ul>
+                <li>
+                  Exact 4 + at least one adjacent enemy → the adjacent enemy is
+                  destroyed and one endpoint stone of the 4 is upgraded into a{" "}
+                  <b>quad crystal</b>.
+                </li>
+                <li>
+                  Which endpoint becomes the quad: endpoint on the side where an
+                  adjacent enemy exists (prefer AFTER if both).
+                </li>
+                <li>
+                  <b>Activation:</b> double-click a quad (your own) to destroy
+                  all enemy stones in the 3×3 centered on that quad. The quad is
+                  consumed and the player's turn is used.
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <b>Star (exact 5)</b>
+              <ul>
+                <li>
+                  Exact 5 + adjacent enemy → adjacent enemy destroyed; endpoint
+                  stone upgraded into a <b>star</b>.
+                </li>
+                <li>
+                  <b>Activation:</b> double-click the star (or press{" "}
+                  <b>Enter</b> when the star is selected) to destroy all enemy
+                  stones in the same row. The star is consumed and the player's
+                  turn is used.
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <b>Hexa (exact 6)</b>
+              <ul>
+                <li>
+                  Exact 6 + adjacent enemy → adjacent enemy destroyed; endpoint
+                  stone upgraded into a <b>hexa</b> (crystal).
+                </li>
+                <li>
+                  <b>Activation:</b> double-click the hexa (your own) to destroy
+                  all enemy stones in the same row and the same column
+                  (excluding the hexa itself). The hexa is consumed and the
+                  player's turn is used.
+                </li>
+              </ul>
+            </li>
+
+
+            <li>
+              <b>Ownership & restrictions</b>
+              <ul>
+                <li>
+                  You can only move or activate pieces that match the current
+                  player's color.
+                </li>
+                <li>Activating a special stone consumes the owner's turn.</li>
+              </ul>
+            </li>
+
+            <li>
+              <b>Winning condition (auto-checked)</b>
+              <ul>
+                <li>
+                  After every board change, the code counts red and blue stones.
+                  If one player's stone count &lt; 3 while opponent has ≥ 3,
+                  opponent wins.
+                </li>
+                <li>
+                  If both players have &lt; 3 stones the result is a Draw.
+                </li>
+              </ul>
+            </li>
+          </ol>
+
+          <h3>Play tips</h3>
+          <ul>
+            <li>
+              To create a quad/star/hexa, build an exact run (4/5/6) and make
+              sure an enemy sits adjacent to the endpoint — that adjacency is
+              required to spawn the upgraded crystal.
+            </li>
+            <li>
+              Because upgrades happen after destroy animation, time your
+              activations — the endpoint must survive the removal-step to be
+              upgraded.
+            </li>
+            <li>
+              Stars clear entire rows; hexa clears row+column — they are
+              powerful board control tools but consume your turn when used.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GameBoard = () => {
   // ----------------- Helpers -----------------
   const createInitialBoard = () => {
     const board = Array.from({ length: BOARD_SIZE }, () =>
       Array(BOARD_SIZE).fill(null)
     );
     for (let row = 0; row < 2; row++) board[row].fill("red");
-    for (let row = BOARD_SIZE - 2; row < BOARD_SIZE; row++) board[row].fill("blue");
+    for (let row = BOARD_SIZE - 2; row < BOARD_SIZE; row++)
+      board[row].fill("blue");
     return board;
   };
 
@@ -20,13 +239,39 @@ const GameBoard = () => {
   const [selected, setSelected] = useState(null);
   const [turn, setTurn] = useState("red");
   const [destroyingStones, setDestroyingStones] = useState([]); // animation tracker
+  const [winner, setWinner] = useState(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   // helper to get base color (e.g., "red" from "red" or "red-quad")
-  const baseColor = (p) => (p && typeof p === "string" ? p.split("-")[0] : null);
+  const baseColor = (p) =>
+    p && typeof p === "string" ? p.split("-")[0] : null;
 
   const makeQuad = (color) => `${color}-quad`;
   const makeStar = (color) => `${color}-star`;
   const makeHexa = (color) => `${color}-hexa`;
+
+  useEffect(() => {
+    if (winner) return; // don't re-check once game is over
+
+    let redCount = 0;
+    let blueCount = 0;
+
+    board.forEach((row) => {
+      row.forEach((cell) => {
+        const color = baseColor(cell);
+        if (color === "red") redCount++;
+        if (color === "blue") blueCount++;
+      });
+    });
+
+    if (redCount < 3 && blueCount >= 3) {
+      setWinner("Blue");
+    } else if (blueCount < 3 && redCount >= 3) {
+      setWinner("Red");
+    } else if (redCount < 3 && blueCount < 3) {
+      setWinner("Draw");
+    }
+  }, [board, winner]);
 
   const isValidMove = (fromRow, fromCol, toRow, toCol) => {
     const dx = Math.abs(fromRow - toRow);
@@ -34,7 +279,8 @@ const GameBoard = () => {
     return dx + dy === 1;
   };
 
-  const withinBounds = (r, c) => r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+  const withinBounds = (r, c) =>
+    r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
 
   // (scanLine is present but we use explicit loops for clarity & parity with your original logic)
   const scanLine = (line, getCell, len, exactLen, handler) => {
@@ -54,7 +300,8 @@ const GameBoard = () => {
 
       // ensure exact length (not part of longer run)
       const beforeSame = i - 1 >= 0 && baseColor(getCell(i - 1)) === color;
-      const afterSame = i + len < BOARD_SIZE && baseColor(getCell(i + len)) === color;
+      const afterSame =
+        i + len < BOARD_SIZE && baseColor(getCell(i + len)) === color;
       if (beforeSame || afterSame) continue;
 
       handler(i, color);
@@ -69,13 +316,13 @@ const GameBoard = () => {
    * - detect exact 3 → destroys adjacent enemies
    * - animate enemy removals, then apply removals + place spawns
    */
-  
+
   const checkAndDestroy = (newBoard) => {
     const updated = newBoard.map((r) => [...r]);
     const toDestroySet = new Set(); // "r,c"
     const quadSpawns = []; // { r, c, color }
-    const starSpawns = []; 
-    const hexaSpawns = []; 
+    const starSpawns = [];
+    const hexaSpawns = [];
 
     // ---------- HEXA detection (exact 6) ----------
     // Horizontal hexa (exact 6)
@@ -94,14 +341,19 @@ const GameBoard = () => {
         ) {
           // ensure exact 6 (not part of 7+)
           const leftSame = c - 1 >= 0 && baseColor(updated[r][c - 1]) === color;
-          const rightSame = c + 6 < BOARD_SIZE && baseColor(updated[r][c + 6]) === color;
+          const rightSame =
+            c + 6 < BOARD_SIZE && baseColor(updated[r][c + 6]) === color;
           if (leftSame || rightSame) continue;
 
           // check adjacent enemies
           const beforeEnemy =
-            c - 1 >= 0 && updated[r][c - 1] && baseColor(updated[r][c - 1]) !== color;
+            c - 1 >= 0 &&
+            updated[r][c - 1] &&
+            baseColor(updated[r][c - 1]) !== color;
           const afterEnemy =
-            c + 6 < BOARD_SIZE && updated[r][c + 6] && baseColor(updated[r][c + 6]) !== color;
+            c + 6 < BOARD_SIZE &&
+            updated[r][c + 6] &&
+            baseColor(updated[r][c + 6]) !== color;
 
           if (!beforeEnemy && !afterEnemy) continue;
 
@@ -135,13 +387,18 @@ const GameBoard = () => {
         ) {
           // ensure exact 6 (not part of 7+)
           const upSame = r - 1 >= 0 && baseColor(updated[r - 1][c]) === color;
-          const downSame = r + 6 < BOARD_SIZE && baseColor(updated[r + 6][c]) === color;
+          const downSame =
+            r + 6 < BOARD_SIZE && baseColor(updated[r + 6][c]) === color;
           if (upSame || downSame) continue;
 
           const beforeEnemy =
-            r - 1 >= 0 && updated[r - 1][c] && baseColor(updated[r - 1][c]) !== color;
+            r - 1 >= 0 &&
+            updated[r - 1][c] &&
+            baseColor(updated[r - 1][c]) !== color;
           const afterEnemy =
-            r + 6 < BOARD_SIZE && updated[r + 6][c] && baseColor(updated[r + 6][c]) !== color;
+            r + 6 < BOARD_SIZE &&
+            updated[r + 6][c] &&
+            baseColor(updated[r + 6][c]) !== color;
 
           if (!beforeEnemy && !afterEnemy) continue;
 
@@ -174,14 +431,19 @@ const GameBoard = () => {
         ) {
           // ensure exact 5 (not part of 6+)
           const leftSame = c - 1 >= 0 && baseColor(updated[r][c - 1]) === color;
-          const rightSame = c + 5 < BOARD_SIZE && baseColor(updated[r][c + 5]) === color;
+          const rightSame =
+            c + 5 < BOARD_SIZE && baseColor(updated[r][c + 5]) === color;
           if (leftSame || rightSame) continue;
 
           // check adjacent enemies
           const beforeEnemy =
-            c - 1 >= 0 && updated[r][c - 1] && baseColor(updated[r][c - 1]) !== color;
+            c - 1 >= 0 &&
+            updated[r][c - 1] &&
+            baseColor(updated[r][c - 1]) !== color;
           const afterEnemy =
-            c + 5 < BOARD_SIZE && updated[r][c + 5] && baseColor(updated[r][c + 5]) !== color;
+            c + 5 < BOARD_SIZE &&
+            updated[r][c + 5] &&
+            baseColor(updated[r][c + 5]) !== color;
 
           if (!beforeEnemy && !afterEnemy) continue;
 
@@ -214,13 +476,18 @@ const GameBoard = () => {
         ) {
           // ensure exact 5 (not part of 6+)
           const upSame = r - 1 >= 0 && baseColor(updated[r - 1][c]) === color;
-          const downSame = r + 5 < BOARD_SIZE && baseColor(updated[r + 5][c]) === color;
+          const downSame =
+            r + 5 < BOARD_SIZE && baseColor(updated[r + 5][c]) === color;
           if (upSame || downSame) continue;
 
           const beforeEnemy =
-            r - 1 >= 0 && updated[r - 1][c] && baseColor(updated[r - 1][c]) !== color;
+            r - 1 >= 0 &&
+            updated[r - 1][c] &&
+            baseColor(updated[r - 1][c]) !== color;
           const afterEnemy =
-            r + 5 < BOARD_SIZE && updated[r + 5][c] && baseColor(updated[r + 5][c]) !== color;
+            r + 5 < BOARD_SIZE &&
+            updated[r + 5][c] &&
+            baseColor(updated[r + 5][c]) !== color;
 
           if (!beforeEnemy && !afterEnemy) continue;
 
@@ -252,14 +519,19 @@ const GameBoard = () => {
         ) {
           // ensure not part of 5+
           const leftSame = c - 1 >= 0 && baseColor(updated[r][c - 1]) === color;
-          const rightSame = c + 4 < BOARD_SIZE && baseColor(updated[r][c + 4]) === color;
+          const rightSame =
+            c + 4 < BOARD_SIZE && baseColor(updated[r][c + 4]) === color;
           if (leftSame || rightSame) continue; // part of longer run -> skip
 
           // check adjacent enemies
           const beforeEnemy =
-            c - 1 >= 0 && updated[r][c - 1] && baseColor(updated[r][c - 1]) !== color;
+            c - 1 >= 0 &&
+            updated[r][c - 1] &&
+            baseColor(updated[r][c - 1]) !== color;
           const afterEnemy =
-            c + 4 < BOARD_SIZE && updated[r][c + 4] && baseColor(updated[r][c + 4]) !== color;
+            c + 4 < BOARD_SIZE &&
+            updated[r][c + 4] &&
+            baseColor(updated[r][c + 4]) !== color;
 
           if (!beforeEnemy && !afterEnemy) continue; // quad needs adjacent enemy to trigger
 
@@ -291,13 +563,18 @@ const GameBoard = () => {
         ) {
           // ensure not part of 5+
           const upSame = r - 1 >= 0 && baseColor(updated[r - 1][c]) === color;
-          const downSame = r + 4 < BOARD_SIZE && baseColor(updated[r + 4][c]) === color;
+          const downSame =
+            r + 4 < BOARD_SIZE && baseColor(updated[r + 4][c]) === color;
           if (upSame || downSame) continue;
 
           const beforeEnemy =
-            r - 1 >= 0 && updated[r - 1][c] && baseColor(updated[r - 1][c]) !== color;
+            r - 1 >= 0 &&
+            updated[r - 1][c] &&
+            baseColor(updated[r - 1][c]) !== color;
           const afterEnemy =
-            r + 4 < BOARD_SIZE && updated[r + 4][c] && baseColor(updated[r + 4][c]) !== color;
+            r + 4 < BOARD_SIZE &&
+            updated[r + 4][c] &&
+            baseColor(updated[r + 4][c]) !== color;
 
           if (!beforeEnemy && !afterEnemy) continue;
 
@@ -328,17 +605,20 @@ const GameBoard = () => {
         ) {
           // ensure exact triple (not part of 4+)
           const leftSame = c - 1 >= 0 && baseColor(updated[r][c - 1]) === color;
-          const rightSame = c + 3 < BOARD_SIZE && baseColor(updated[r][c + 3]) === color;
+          const rightSame =
+            c + 3 < BOARD_SIZE && baseColor(updated[r][c + 3]) === color;
           if (leftSame || rightSame) continue;
 
           // destroy adjacent enemies at both ends if present
           if (c - 1 >= 0) {
             const lc = updated[r][c - 1];
-            if (lc && baseColor(lc) !== color) toDestroySet.add(`${r},${c - 1}`);
+            if (lc && baseColor(lc) !== color)
+              toDestroySet.add(`${r},${c - 1}`);
           }
           if (c + 3 < BOARD_SIZE) {
             const rc = updated[r][c + 3];
-            if (rc && baseColor(rc) !== color) toDestroySet.add(`${r},${c + 3}`);
+            if (rc && baseColor(rc) !== color)
+              toDestroySet.add(`${r},${c + 3}`);
           }
         }
       }
@@ -356,24 +636,34 @@ const GameBoard = () => {
           baseColor(updated[r + 2][c]) === color
         ) {
           const upSame = r - 1 >= 0 && baseColor(updated[r - 1][c]) === color;
-          const downSame = r + 3 < BOARD_SIZE && baseColor(updated[r + 3][c]) === color;
+          const downSame =
+            r + 3 < BOARD_SIZE && baseColor(updated[r + 3][c]) === color;
           if (upSame || downSame) continue;
 
           if (r - 1 >= 0) {
             const uc = updated[r - 1][c];
-            if (uc && baseColor(uc) !== color) toDestroySet.add(`${r - 1},${c}`);
+            if (uc && baseColor(uc) !== color)
+              toDestroySet.add(`${r - 1},${c}`);
           }
           if (r + 3 < BOARD_SIZE) {
             const dc = updated[r + 3][c];
-            if (dc && baseColor(dc) !== color) toDestroySet.add(`${r + 3},${c}`);
+            if (dc && baseColor(dc) !== color)
+              toDestroySet.add(`${r + 3},${c}`);
           }
         }
       }
     }
 
     // If there are any enemies to destroy, animate then remove them and apply spawns
-    if (toDestroySet.size > 0 || quadSpawns.length > 0 || starSpawns.length > 0 || hexaSpawns.length > 0) {
-      const toDestroy = Array.from(toDestroySet).map((k) => k.split(",").map(Number));
+    if (
+      toDestroySet.size > 0 ||
+      quadSpawns.length > 0 ||
+      starSpawns.length > 0 ||
+      hexaSpawns.length > 0
+    ) {
+      const toDestroy = Array.from(toDestroySet).map((k) =>
+        k.split(",").map(Number)
+      );
       if (toDestroy.length > 0) {
         setDestroyingStones(toDestroy);
       }
@@ -660,7 +950,9 @@ const GameBoard = () => {
     return (
       <div
         key={`${row}-${col}`}
-        className={`cell ${selected?.row === row && selected?.col === col ? "selected" : ""}`}
+        className={`cell ${
+          selected?.row === row && selected?.col === col ? "selected" : ""
+        }`}
         onClick={() => handleCellClick(row, col)}
         onDrop={(e) => handleDrop(e, row, col)}
         onDragOver={handleDragOver}
@@ -688,9 +980,78 @@ const GameBoard = () => {
   };
 
   return (
-    <div className="game-board-container">
-      <div className="board">{renderBoard()}</div>
-      <div className="turn-indicator">Turn: {turn.toUpperCase()}</div>
+    <div className="game-layout">
+      {/* Left Sidebar */}
+      <div className="sidebar-left">
+        <button className="rules-btn" onClick={() => setRulesOpen(true)}>
+          📜 Rules
+        </button>
+
+        <div className="rank-card">
+          <p>Your Rank</p>
+          <h3>#76421</h3>
+          <small>Worldwide</small>
+        </div>
+
+        <div className="profile-card">
+          <img
+            src="https://via.placeholder.com/80"
+            // alt="Profile"
+            className="profile-pic"
+          />
+          <p>Username</p>
+        </div>
+
+        <div className="bottom-buttons">
+          <button className="logout-btn">🚪 Give Up!</button>
+          <button className="donate-btn">💖 Donate</button>
+        </div>
+      </div>
+
+      {/* Center Board */}
+      <div className="game-center">
+        <div className="game-board-container">
+          <div className="board">{renderBoard()}</div>
+          <div className="turn-indicator">Turn: {turn.toUpperCase()}</div>
+          {winner && (
+            <div className="winner-message">
+              {winner === "Draw"
+                ? "It's a Draw!"
+                : `${winner} has won the game!`}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Sidebar */}
+      <div className="sidebar-right">
+        <div className="chat-box">
+          <div className="messages">
+            <p>
+              <b>Opponent:</b> Good luck!
+            </p>
+            <p>
+              <b>You:</b> Thanks 🚀
+            </p>
+          </div>
+          <div className="chat-input">
+            <input type="text" placeholder="Type your message..." />
+            <button>➤</button>
+          </div>
+        </div>
+
+        <div className="opponent-card">
+          <img
+            src="https://via.placeholder.com/60"
+            // alt="Opponent"
+            className="opponent-pic"
+          />
+          <p>Opponent</p>
+          <small>Rank: #89321</small>
+          <button className="friend-btn">+ Add Friend</button>
+        </div>
+      </div>
+      <RulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
   );
 };
