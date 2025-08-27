@@ -1,0 +1,178 @@
+.page-container {
+  min-height: 100vh;
+  background-image: url('https://tinyurl.com/tcabsw5t');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+}
+
+.profile-section {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 50px;
+}
+
+.cardProfile{
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 350px; 
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+}
+
+.avatar {
+  width: 90px;
+  height: 90px;
+  background: #ddd;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 36px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.username {
+  font-weight: 600;
+  font-size: 18px;
+  color: #222;
+}
+
+.rank {
+  font-size: 14px;
+  color: #555;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 650px; 
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+  padding: 30px;
+  margin-top: 140px;
+}
+
+.title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: bold;
+  color: black;
+}
+
+.subtitle {
+  text-align: center;
+  font-style: italic;
+  color: #444;
+}
+
+/* Buttons */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 14px;
+  border: none;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  color: #222;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.3s;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
+}
+
+.btn-outline {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 2px solid #666;
+  background: transparent;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.3s, color 0.3s;
+}
+
+.btn-outline:hover {
+  background: #666;
+  color: white;
+}
+
+.note {
+  font-size: 12px;
+  text-align: center;
+  color: #555;
+}
+
+.donate-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-title {
+  margin-bottom: 15px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.stats {
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 6px;
+}
