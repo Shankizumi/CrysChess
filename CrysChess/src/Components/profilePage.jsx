@@ -13,8 +13,10 @@ export default function ProfilePage() {
           <div>
             <p className="username">Username</p>
             <p className="rank">Rank: 67421</p>
+            <button className="btn-outline">Friend List</button>
           </div>
         </div>
+
       <div className="card">
         {/* Welcome Text */}
         <h1 className="title">Welcome to CryChess</h1>
