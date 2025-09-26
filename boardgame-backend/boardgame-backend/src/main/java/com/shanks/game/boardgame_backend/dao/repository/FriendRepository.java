@@ -1,7 +1,12 @@
 package com.shanks.game.boardgame_backend.dao.repository;
 
 import com.shanks.game.boardgame_backend.dto.entity.Friend;
+
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -19,5 +24,11 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     // ✅ Fetch all accepted friendships where user is either sender or receiver
     @Query("SELECT f FROM Friend f WHERE (f.userId = :userId OR f.friendId = :userId) AND f.status = 'ACCEPTED'")
     List<Friend> findAllFriendsForUser(@Param("userId") Long userId);
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Friend f WHERE (f.userId = :userId AND f.friendId = :friendId) OR (f.userId = :friendId AND f.friendId = :userId)")
+    void deleteFriendship(@Param("userId") Long userId, @Param("friendId") Long friendId);
+
+
 
 }

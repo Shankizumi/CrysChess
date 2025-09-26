@@ -38,4 +38,7 @@ public class User {
 
     @Column(nullable = false)
     private int losses = 0;
+
+    private String profilePictureUrl;
+
 }

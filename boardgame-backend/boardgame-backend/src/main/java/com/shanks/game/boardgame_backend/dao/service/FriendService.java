@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FriendService {
@@ -15,8 +16,11 @@ public class FriendService {
 
     // ✅ Send Friend Request
     public Friend sendRequest(Long userId, Long friendId) {
-        if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent()) {
-            throw new RuntimeException("Friend request already exists");
+        Optional<Friend> existing = friendRepository.findByUserIdAndFriendId(userId, friendId);
+        Optional<Friend> reverse = friendRepository.findByUserIdAndFriendId(friendId, userId);
+
+        if (existing.isPresent() || reverse.isPresent()) {
+            throw new RuntimeException("Friend request already exists or you are already friends");
         }
 
         Friend request = Friend.builder()
@@ -32,24 +36,37 @@ public class FriendService {
     public Friend acceptRequest(Long requestId) {
         Friend request = friendRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
+
         request.setStatus("ACCEPTED");
-        return friendRepository.save(request);
+        friendRepository.save(request);
+
+        // Insert reverse friendship if not exists (for bidirectional relation)
+        if (!friendRepository.findByUserIdAndFriendId(request.getFriendId(), request.getUserId()).isPresent()) {
+            Friend reverse = Friend.builder()
+                    .userId(request.getFriendId())
+                    .friendId(request.getUserId())
+                    .status("ACCEPTED")
+                    .build();
+            friendRepository.save(reverse);
+        }
+
+        return request;
     }
 
     // ✅ Reject Friend Request
+// ✅ Reject Friend Request
     public Friend rejectRequest(Long requestId) {
         Friend request = friendRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
         request.setStatus("REJECTED");
-        return friendRepository.save(request);
+        return friendRepository.save(request); // return the updated Friend
     }
 
-    // ✅ View All Friends of a User
-// ✅ View All Friends of a User (both directions)
+
+    // ✅ View All Friends of a User (both directions)
     public List<Friend> getFriends(Long userId) {
         return friendRepository.findAllFriendsForUser(userId);
     }
-
 
     // ✅ View Pending Requests (for a user)
     public List<Friend> getPendingRequests(Long userId) {
@@ -58,15 +75,16 @@ public class FriendService {
 
     // ✅ Remove Friend (both directions)
     public void removeFriend(Long userId, Long friendId) {
-        friendRepository.deleteByUserIdAndFriendId(userId, friendId);
-        friendRepository.deleteByUserIdAndFriendId(friendId, userId);
+        friendRepository.deleteFriendship(userId, friendId);
     }
 
-    // ✅ Check Friendship Status
+    // ✅ Check Friendship Status (now both directions)
     public String checkFriendshipStatus(Long userId, Long friendId) {
         return friendRepository.findByUserIdAndFriendId(userId, friendId)
                 .map(Friend::getStatus)
-                .orElse("NOT_FRIENDS");
+                .orElseGet(() -> friendRepository.findByUserIdAndFriendId(friendId, userId)
+                        .map(Friend::getStatus)
+                        .orElse("NOT_FRIENDS"));
     }
 
     // ✅ Search Friends by Username or Email
