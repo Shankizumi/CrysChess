@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; 
 import "./loginPage.css";
+import userService from "../Services/userService";
+import { useDispatch } from "react-redux";
+import { setUser } from "../store/userSlice";
 
-export default function loginPage() {
+export default function LoginPage() {
   const [tab, setTab] = useState("login"); // "login" | "register"
   const [form, setForm] = useState({
     email: "",
@@ -10,7 +14,11 @@ export default function loginPage() {
     confirm: "",
   });
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState(null);
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  
   // Kill page scrollbars on the auth screen
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
@@ -24,12 +32,10 @@ export default function loginPage() {
 
   const validate = () => {
     const e = {};
-    // Email
     if (!form.email) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Enter a valid email";
 
-    // Password (8+, upper/lower/number)
     if (!form.password) e.password = "Password is required";
     else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.password))
       e.password = "Min 8 chars with upper, lower & number";
@@ -46,32 +52,61 @@ export default function loginPage() {
     return Object.keys(e).length === 0;
   };
 
-  const submit = (ev) => {
+  const submit = async (ev) => {
     ev.preventDefault();
+    setServerError(null);
+
     if (!validate()) return;
-    if (tab === "login") {
-      // handle real login here
-      alert("Logged in to CrysChess 🧊♟️");
-    } else {
-      // handle real registration here
-      alert("Account created — welcome to CrysChess! 🎉");
+
+    try {
+      if (tab === "login") {
+        // 🔹 Login API
+        const loginRes = await userService.login({
+          email: form.email,
+          password: form.password,
+        });
+        console.log("✅ Logged in:", loginRes);
+
+        // 🔹 Fetch full user details
+        const fullUserData = await userService.getUserById(loginRes.id);
+
+        // 🔹 Save to Redux instead of localStorage
+        dispatch(setUser(fullUserData));
+
+        // 🔹 Navigate to profile
+        navigate("/profilePage");
+      } else {
+        // 🔹 Register API
+        const res = await userService.register({
+          username: form.username,
+          email: form.email,
+          password: form.password,
+        });
+        console.log("✅ Registered:", res);
+
+        // Clear form
+        setForm({ email: "", password: "", username: "", confirm: "" });
+        setErrors({});
+        
+        // Switch tab to login
+        setTab("login");
+        navigate("/login");
+      }
+    } catch (err) {
+      setServerError(err.message);
     }
   };
 
   return (
-    <div
-      className="auth-page"
-      // put your local bg image at /public/assets/cryschess-bg.jpg
-      style={{ "--bg-url": "url(/assets/cryschess-bg.jpg)" }}
-    >
+    <div className="auth-page">
       <div className="auth-card">
-        {/* Brand */}
         <div className="brand">
-          <span className="crys">Crys</span>
-          <span className="chess">Chess</span>
+          <span className="crys">Join</span>
+          <span className="chess">Us</span>
         </div>
 
-        {/* Tabs */}
+        {serverError && <p className="server-error">{serverError}</p>}
+
         <div className="tabs" role="tablist" aria-label="Auth Tabs">
           <button
             role="tab"
@@ -91,7 +126,6 @@ export default function loginPage() {
           </button>
         </div>
 
-        {/* Form */}
         <form className="form" onSubmit={submit} noValidate>
           {tab === "register" && (
             <div className="group">
@@ -158,8 +192,11 @@ export default function loginPage() {
 
           <div className="or">or</div>
 
-          <button type="button" className="btn google" onClick={() => alert("Google OAuth…")}>
-            {/* you can swap this with an actual Google icon */}
+          <button
+            type="button"
+            className="btn google"
+            onClick={() => alert("Google OAuth…")}
+          >
             <span className="gdot" aria-hidden />
             Continue with Google
           </button>

@@ -1,0 +1,57 @@
+/* Navbar container */
+.navbar {
+  position: fixed;       /* stays on top even when scrolling */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;         /* overlays everything else */
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.75rem 1rem; /* optional, for spacing */
+  /* backdrop-filter: blur(4px); optional frosted glass effect */
+
+      background: rgba(0, 0, 0, 0.35);  /* translucent dark bg */
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+}
+.logo {
+  height: 70px;   /* Adjust size to fit */
+  width: auto;    /* Keeps aspect ratio */
+  object-fit: contain;
+  margin-left: 20px;
+}
+
+/* Brand — gradient glow like the game panels */
+.brandnav {
+  display: flex;
+  justify-content: center;
+  margin-right: auto;
+  gap: 0.25rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 14px rgba(124, 58, 237, 0.35);
+  background: transparent;
+
+
+}
+
+.brandnav .crys {
+  font-size: clamp(32px, 5vw, 36px);
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+    -webkit-text-stroke: .7px #ffffff;
+
+}
+
+
+
+.brandnav .chesss {
+  font-size: clamp(32px, 5vw, 36px);
+  color: #f4f4fb;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15));
+
+}
