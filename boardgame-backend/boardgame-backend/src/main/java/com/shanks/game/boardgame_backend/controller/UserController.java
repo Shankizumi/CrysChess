@@ -97,22 +97,20 @@ public class UserController {
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
         try {
-            // ✅ Create folder if not exists
             Path folder = Paths.get("src/main/resources/static/pfp/");
             Files.createDirectories(folder);
 
-            // ✅ Unique filename to avoid overwriting
-            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            // ✅ Fixed filename per user
+            String fileName = "user_" + id + ".jpg";
             Path filePath = folder.resolve(fileName);
 
-            // ✅ Save the file locally
+            // ✅ Overwrite old file
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // ✅ Public URL (served from static folder)
+            // ✅ Save URL in DB
             String url = "/pfp/" + fileName;
-
-            // ✅ Update user in DB and get updated user back
             User updatedUser = userService.updateProfilePicture(id, url);
+
             return ResponseEntity.ok(updatedUser);
 
         } catch (IOException e) {
@@ -151,7 +149,15 @@ public class UserController {
         }
     }
 
-
-
+        // ✅ Update username and password from profile modal
+        @PutMapping("/update-credentials")
+        public ResponseEntity<User> updateUsernameAndPassword(
+                @RequestParam Long userId,
+                @RequestParam String username,
+                @RequestParam String password
+        ) {
+            User updatedUser = userService.updateUsernameAndPassword(userId, username, password);
+            return ResponseEntity.ok(updatedUser);
+        }
 
 }

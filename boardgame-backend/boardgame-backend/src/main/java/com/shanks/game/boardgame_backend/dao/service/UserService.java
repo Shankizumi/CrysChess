@@ -169,4 +169,25 @@ public class UserService {
         return profilePicUrl;
     }
 
+    // Update only username and password
+    public User updateUsernameAndPassword(Long userId, String newUsername, String newPassword) {
+        User user = getUserById(userId); // fetch existing user
+
+        // Update username if provided
+        if (newUsername != null && !newUsername.isBlank() && !newUsername.equals(user.getUsername())) {
+            if (userRepository.existsByUsername(newUsername)) {
+                throw new IllegalArgumentException("Username already taken");
+            }
+            user.setUsername(newUsername);
+        }
+
+        // Update password if provided
+        if (newPassword != null && !newPassword.isBlank()) {
+            user.setPassword(new BCryptPasswordEncoder().encode(newPassword));
+        }
+
+        return userRepository.save(user);
+    }
+
+
 }
