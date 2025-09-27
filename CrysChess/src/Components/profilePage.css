@@ -171,6 +171,8 @@ color: black;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
+      z-index: 10000;
+
   justify-content: center;
   align-items: center;
 }
@@ -181,7 +183,7 @@ color: black;
   padding: 20px;
   width: 90%;
   max-width: 450px;
-    z-index: 10000;
+  z-index: 10000;
 
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
@@ -419,6 +421,8 @@ margin-top: 280px;
   padding: 20px;
   width: 90%;
   max-width: 500px;
+      z-index: 10000;
+
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 
 }

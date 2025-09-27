@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import userService from "../Services/userService"; // adjust path if needed
 import { setUser } from "../store/userSlice"; // if you update Redux store
 
-
 import {
   fetchPendingRequests,
   acceptFriendRequest,
@@ -38,9 +37,8 @@ export default function ProfilePage() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-  refreshProfilePic();
-}, [user?.id]); // runs once on load or when user.id changes
-
+    refreshProfilePic();
+  }, [user?.id]); // runs once on load or when user.id changes
 
   const isFriendOrPending = (userId) =>
     friendList.some((f) => f.id === userId) ||
@@ -97,18 +95,28 @@ export default function ProfilePage() {
     }
   };
 
-const refreshProfilePic = async () => {
-  if (!user?.id) return;
-  try {
-    // ✅ call via userService, not directly
-    const blobUrl = await userService.getProfilePicture(user.id);
-    dispatch(setUser({ ...user, profilePictureUrl: blobUrl }));
-  } catch (err) {
-    console.error("Failed to refresh profile picture:", err);
-  }
-};
+  const refreshProfilePic = async () => {
+    if (!user?.id) return;
+    try {
+      // ✅ call via userService, not directly
+      const blobUrl = await userService.getProfilePicture(user.id);
+      dispatch(setUser({ ...user, profilePictureUrl: blobUrl }));
+    } catch (err) {
+      console.error("Failed to refresh profile picture:", err);
+    }
+  };
 
-
+  const refreshUser = async () => {
+    if (!user?.id) return;
+    try {
+      // ✅ fetch latest user from backend
+      const latestUser = await userService.getUserById(user.id);
+      // ✅ update Redux with fresh data
+      dispatch(setUser(latestUser));
+    } catch (err) {
+      console.error("Failed to refresh user data:", err);
+    }
+  };
 
   return (
     <div className="page-container">
@@ -137,30 +145,33 @@ const refreshProfilePic = async () => {
         </button>
       </div>
       {/* Profile Section */}
-<div className="profile-section cardProfile">
-  <div className="avatar" onClick={() => setOpen(true)}>
-    {user?.profilePictureUrl ? (
-      <img
-        src={user.profilePictureUrl}
-        alt="avatar"
-        className="avatar-img"
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = "/default-avatar.png"; // fallback in case image is broken
-        }}
-      />
-    ) : (
-      "👤" // default emoji if no profile picture
-    )}
-  </div>
-  <div>
-    <p className="username">{user?.username || "Guest"}</p>
-    <p className="rank">Rank: {user?.rank || "Unranked"}</p>
-    <button className="btn-outline frdbtn" onClick={() => setOpenFriends(true)}>
-      Friend List
-    </button>
-  </div>
-</div>
+      <div className="profile-section cardProfile">
+        <div className="avatar" onClick={() => setOpen(true)}>
+          {user?.profilePictureUrl ? (
+            <img
+              src={user.profilePictureUrl}
+              alt="avatar"
+              className="avatar-img"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "/default-avatar.png"; // fallback in case image is broken
+              }}
+            />
+          ) : (
+            "👤" // default emoji if no profile picture
+          )}
+        </div>
+        <div>
+          <p className="username">{user?.username || "Guest"}</p>
+          <p className="rank">Rank: {user?.rank || "Unranked"}</p>
+          <button
+            className="btn-outline frdbtn"
+            onClick={() => setOpenFriends(true)}
+          >
+            Friend List
+          </button>
+        </div>
+      </div>
 
       {/* Main Card */}
       <div className="card">
@@ -341,114 +352,162 @@ const refreshProfilePic = async () => {
           </div>
         </div>
       )}
- {/* Modal for Profile Info */}
-{open && (
-  <div className="modal-overlay" onClick={() => setOpen(false)}>
-    <div className="modal" onClick={(e) => e.stopPropagation()}>
-      <h2 className="modal-title">Edit Profile</h2>
-      <div className="modal-form">
-        {/* Username */}
-        <div>
-          <label>Username</label>
-          <input
-            type="text"
-            defaultValue={user?.username}
-            className="input"
-          />
-        </div>
+      {/* Modal for Profile Info */}
+      {open && (
+        <div className="modal-overlay" onClick={() => setOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Edit Profile</h2>
 
-        {/* Password */}
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            placeholder="Enter new password"
-            className="input"
-          />
-        </div>
+            <div className="modal-form">
+              {/* Username */}
 
-        {/* Email */}
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            placeholder={user?.email}
-            className="input"
-            disabled
-          />
-        </div>
+              <div>
+                <label>Username</label>
+                <input
+                  type="text"
+                  defaultValue={user?.username}
+                  className="input"
+                  id="username-input"
+                />
+              </div>
 
-        {/* Non-editable stats */}
-        <div className="stats">
-          <div>
-            <p>Wins: {user?.wins || 0}</p>
-            <p>Losses: {user?.losses || 0}</p>
-            <p>Global Rank: {user?.rank || "N/A"}</p>
+              {/* Password */}
+              <div>
+                <label>Password</label>
+                <input
+                  type="password"
+                  placeholder="Enter new password"
+                  className="input"
+                  id="password-input"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label>Email</label>
+                <input
+                  type="email"
+                  placeholder={user?.email}
+                  className="input"
+                  disabled
+                />
+              </div>
+
+              {/* Non-editable stats */}
+              <div className="stats">
+                <div>
+                  <p>Wins: {user?.wins || 0}</p>
+                  <p>Losses: {user?.losses || 0}</p>
+                  <p>Global Rank: {user?.rank || "N/A"}</p>
+                </div>
+
+                {/* Profile Picture / Avatar */}
+                <div className="profile-pic-wrapper">
+                  <img
+                    src={
+                      user?.profilePictureUrl
+                        ? `${user.profilePictureUrl}?t=${Date.now()}`
+                        : null
+                    }
+                    alt="Profile"
+                    className="profile-pic"
+                    onClick={() =>
+                      document.getElementById("pfp-upload").click()
+                    }
+                    style={{
+                      display: user?.profilePictureUrl ? "block" : "none",
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      document.getElementById("avatar-fallback").style.display =
+                        "flex";
+                    }}
+                  />
+                  <div
+                    id="avatar-fallback"
+                    className="upimg"
+                    style={{
+                      display: user?.profilePictureUrl ? "none" : "flex",
+                    }}
+                    onClick={() =>
+                      document.getElementById("pfp-upload").click()
+                    }
+                  >
+                    👤
+                  </div>
+
+                  <input
+                    type="file"
+                    id="pfp-upload"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      try {
+                        const updatedUser =
+                          await userService.updateProfilePicture(user.id, file);
+                        dispatch(setUser(updatedUser));
+                        refreshProfilePic();
+                      } catch (err) {
+                        console.error(err);
+                        alert(err.message);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Save Changes Button */}
+              <p id="st" className="st"></p>
+
+              <button
+                className="btn"
+                onClick={async () => {
+                  const newUsername =
+                    document.getElementById("username-input").value;
+                  const newPassword =
+                    document.getElementById("password-input").value;
+
+                  try {
+                    // 1️⃣ Update credentials
+                    await userService.updateCredentials(
+                      user.id,
+                      newUsername,
+                      newPassword
+                    );
+
+                    // 2️⃣ Get latest user (without profilePictureUrl)
+                    const latestUser = await userService.getUserById(user.id);
+
+                    // 3️⃣ Fetch latest profile picture separately
+                    const blobUrl = await userService.getProfilePicture(
+                      user.id
+                    );
+
+                    // 4️⃣ Merge user + profile picture into Redux
+                    dispatch(
+                      setUser({
+                        ...latestUser,
+                        profilePictureUrl: blobUrl,
+                      })
+                    );
+
+                    // 5️⃣ Close modal
+                    setOpen(false);
+                  } catch (err) {
+                    console.error(err);
+                    // alert(err.message);
+                    document.getElementById("st").innerText = err.message;
+                  }
+                }}
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
-
-          {/* Profile Picture / Avatar */}
-{/* Profile Picture / Avatar */}
-<div className="profile-pic-wrapper">
-  {/* Profile Picture */}
-  <img
-    src={user?.profilePictureUrl ? `${user.profilePictureUrl}?t=${Date.now()}` : null}
-    alt="Profile"
-    className="profile-pic"
-    onClick={() => document.getElementById("pfp-upload").click()}
-    style={{ display: user?.profilePictureUrl ? "block" : "none" }}
-    onError={(e) => {
-      e.target.style.display = "none"; // hide broken image
-      document.getElementById("avatar-fallback").style.display = "flex"; // show fallback
-    }}
-  />
-
-  {/* Avatar Fallback */}
-  <div
-    id="avatar-fallback"
-    className="upimg"
-    style={{ display: user?.profilePictureUrl ? "none" : "flex" }}
-    onClick={() => document.getElementById("pfp-upload").click()}
-  >
-    👤
-  </div>
-
-  {/* Hidden File Input */}
-  <input
-    type="file"
-    id="pfp-upload"
-    accept="image/*"
-    style={{ display: "none" }}
-    onChange={async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const updatedUser = await userService.updateProfilePicture(user.id, file);
-        dispatch(setUser(updatedUser)); // update Redux
-        // console.log(user)
-          refreshProfilePic(); // optional, refresh even if just closed
-
-      } catch (err) {
-        console.error(err);
-        alert(err.message);
-      }
-    }}
-  />
-</div>
-
         </div>
-
-        {/* Save Changes Button */}
-        <button className="btn" onClick={() => {
-  setOpen(false);
-  refreshProfilePic(); // optional, refresh even if just closed
-}}
->
-          Save Changes
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

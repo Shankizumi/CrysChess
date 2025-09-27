@@ -45,6 +45,7 @@ const getUserById = async (id) => {
   } catch (error) {
     throw new Error(error.response?.data?.message || "Failed to fetch user");
   }
+
 };
 
 // ✅ Search users by username
@@ -82,6 +83,23 @@ const getProfilePicture = async (userId) => {
 };
 
 
+// ✅ Update username and password from profile modal
+const updateCredentials = async (userId, username, password) => {
+  try {
+    const res = await axios.put(
+      `${API_URL}/update-credentials`,
+      null, // no request body, params are in URL
+      {
+        params: { userId, username, password },
+      }
+    );
+    return res.data; // updated user object
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Failed to update credentials");
+  }
+};
+
+
 
 
 
@@ -94,6 +112,7 @@ const userService = {
   searchUsers,
   updateProfilePicture,
   getProfilePicture,
+  updateCredentials,
 
 };
 
