@@ -4,6 +4,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import userService from "../Services/userService"; // adjust path if needed
 import { setUser } from "../store/userSlice"; // if you update Redux store
+import LogoutConfirmModal from "../Components/LogoutConfirmModal";
+
 
 import {
   fetchPendingRequests,
@@ -28,6 +30,8 @@ export default function ProfilePage() {
   const [justSent, setJustSent] = useState([]);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+
 
   const user = useSelector((state) => state.user.user);
   const { friendList, pendingRequests, loading } = useSelector(
@@ -80,20 +84,46 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSearch = async () => {
+const handleSearch = async () => {
+    if (!searchTerm.trim()) return; // prevent empty searches
     setOpenSearch(true);
     setSearchLoading(true);
     setSearchError(null);
+
     try {
-      const results = await UserService.searchUsers(searchTerm);
-      setSearchResults(results);
+        // 1️⃣ Search users by term
+        const results = await UserService.searchUsers(searchTerm.trim());
+
+        if (results.length === 0) {
+            setSearchError("No users found");
+            setSearchResults([]);
+            return;
+        }
+
+        // 2️⃣ Fetch profile picture for each user
+        const detailedResults = await Promise.all(
+            results.map(async (user) => {
+                try {
+                    const avatar = await userService.getProfilePicture(user.id);
+                    return { ...user, avatar };
+                } catch (err) {
+                    console.error("Failed to fetch avatar for user", user.id, err);
+                    return { ...user, avatar: null }; // fallback
+                }
+            })
+        );
+
+        // 3️⃣ Update state with full data
+        setSearchResults(detailedResults);
     } catch (error) {
-      setSearchError(error.message);
-      setSearchResults([]);
+        console.error("Search error:", error);
+        setSearchError(error.message || "Failed to search users");
+        setSearchResults([]);
     } finally {
-      setSearchLoading(false);
+        setSearchLoading(false);
     }
-  };
+};
+
 
   const refreshProfilePic = async () => {
     if (!user?.id) return;
@@ -135,11 +165,7 @@ export default function ProfilePage() {
         <button
           className="btn"
           style={{ marginLeft: "20px", border: "2px solid white" }}
-          onClick={() => {
-            dispatch(logout());
-            persistor.purge();
-            navigate("/login"); // redirect to login page
-          }}
+ onClick={() => setLogoutModalOpen(true)}
         >
           Logout
         </button>
@@ -315,7 +341,7 @@ export default function ProfilePage() {
                       <img
                         src={result.avatar || "https://i.pravatar.cc/70"}
                         alt={result.username}
-                        className="friendavatar"
+                        className="avatar-img"
                       />
                       <div className="friendinfo">
                         <p className="username">{result.username}</p>
@@ -508,6 +534,16 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      <LogoutConfirmModal
+  isOpen={logoutModalOpen}
+  onCancel={() => setLogoutModalOpen(false)}
+  onConfirm={() => {
+      dispatch(logout());
+      persistor.purge();
+      navigate("/login");
+  }}
+/>
     </div>
   );
 }

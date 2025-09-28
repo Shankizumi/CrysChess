@@ -4,7 +4,7 @@
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 1000;         /* overlays everything else */
+  z-index: 100;         /* overlays everything else */
   background: transparent;
   display: flex;
   justify-content: center;

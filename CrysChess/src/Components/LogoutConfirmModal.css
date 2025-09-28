@@ -1,0 +1,62 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal-content {
+    background: #1e1e1e;
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    width: 320px;
+    max-width: 90%;
+    text-align: center;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.modal-message {
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-around;
+}
+.lgbtn{
+    font: 1em sans-serif;
+}
+
+.lgbtn-outline {
+    border: 2px solid white;
+    background: transparent;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.lgbtn-danger {
+    background: #ff4d4d;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.lgbtn:hover {
+    opacity: 0.9;
+}
