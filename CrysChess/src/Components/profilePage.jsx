@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import userService from "../Services/userService"; // adjust path if needed
 import { setUser } from "../store/userSlice"; // if you update Redux store
 import LogoutConfirmModal from "../Components/LogoutConfirmModal";
-
+import Alert from "./Alert"; // import Alert component
 
 import {
   fetchPendingRequests,
@@ -15,6 +15,7 @@ import {
   sendFriendRequest,
 } from "../store/friendSlice";
 import UserService from "../Services/userService";
+import FriendService from "../Services/friendService";
 import { persistor } from "../store/store";
 import { logout } from "../store/userSlice";
 
@@ -31,7 +32,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
-
+  const [alerts, setAlerts] = useState([]);
 
   const user = useSelector((state) => state.user.user);
   const { friendList, pendingRequests, loading } = useSelector(
@@ -80,50 +81,49 @@ export default function ProfilePage() {
       setJustSent((prev) => [...prev, friendId]);
       dispatch(fetchPendingRequests(user.id));
     } catch (error) {
-      alert(error || "Failed to send friend request");
+      showAlert("error", error || "Failed to send friend request");
     }
   };
 
-const handleSearch = async () => {
+  const handleSearch = async () => {
     if (!searchTerm.trim()) return; // prevent empty searches
     setOpenSearch(true);
     setSearchLoading(true);
     setSearchError(null);
 
     try {
-        // 1️⃣ Search users by term
-        const results = await UserService.searchUsers(searchTerm.trim());
+      // 1️⃣ Search users by term
+      const results = await UserService.searchUsers(searchTerm.trim());
 
-        if (results.length === 0) {
-            setSearchError("No users found");
-            setSearchResults([]);
-            return;
-        }
-
-        // 2️⃣ Fetch profile picture for each user
-        const detailedResults = await Promise.all(
-            results.map(async (user) => {
-                try {
-                    const avatar = await userService.getProfilePicture(user.id);
-                    return { ...user, avatar };
-                } catch (err) {
-                    console.error("Failed to fetch avatar for user", user.id, err);
-                    return { ...user, avatar: null }; // fallback
-                }
-            })
-        );
-
-        // 3️⃣ Update state with full data
-        setSearchResults(detailedResults);
-    } catch (error) {
-        console.error("Search error:", error);
-        setSearchError(error.message || "Failed to search users");
+      if (results.length === 0) {
+        setSearchError("No users found");
         setSearchResults([]);
-    } finally {
-        setSearchLoading(false);
-    }
-};
+        return;
+      }
 
+      // 2️⃣ Fetch profile picture for each user
+      const detailedResults = await Promise.all(
+        results.map(async (user) => {
+          try {
+            const avatar = await userService.getProfilePicture(user.id);
+            return { ...user, avatar };
+          } catch (err) {
+            console.error("Failed to fetch avatar for user", user.id, err);
+            return { ...user, avatar: null }; // fallback
+          }
+        })
+      );
+
+      // 3️⃣ Update state with full data
+      setSearchResults(detailedResults);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchError(error.message || "Failed to search users");
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
   const refreshProfilePic = async () => {
     if (!user?.id) return;
@@ -148,6 +148,14 @@ const handleSearch = async () => {
     }
   };
 
+  const showAlert = (type, message) => {
+    const id = Date.now();
+    setAlerts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setAlerts((prev) => prev.filter((a) => a.id !== id));
+    }, 3000);
+  };
+
   return (
     <div className="page-container">
       {/* Search Bar + Logout */}
@@ -165,7 +173,7 @@ const handleSearch = async () => {
         <button
           className="btn"
           style={{ marginLeft: "20px", border: "2px solid white" }}
- onClick={() => setLogoutModalOpen(true)}
+          onClick={() => setLogoutModalOpen(true)}
         >
           Logout
         </button>
@@ -536,14 +544,27 @@ const handleSearch = async () => {
       )}
 
       <LogoutConfirmModal
-  isOpen={logoutModalOpen}
-  onCancel={() => setLogoutModalOpen(false)}
-  onConfirm={() => {
-      dispatch(logout());
-      persistor.purge();
-      navigate("/login");
-  }}
-/>
+        isOpen={logoutModalOpen}
+        onCancel={() => setLogoutModalOpen(false)}
+        onConfirm={() => {
+          dispatch(logout());
+          persistor.purge();
+          navigate("/login");
+        }}
+      />
+
+      <div className="alerts-container">
+        {alerts.map((a) => (
+          <Alert
+            key={a.id}
+            type={a.type}
+            message={a.message}
+            onClose={() =>
+              setAlerts((prev) => prev.filter((alert) => alert.id !== a.id))
+            }
+          />
+        ))}
+      </div>
     </div>
   );
 }

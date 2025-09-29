@@ -34,6 +34,20 @@ const FriendService = {
   // Add friend Data
   friendData: (userId) =>
     axios.get(`${User_URL}/${userId}`),
+
+  // Get friend status
+  getFriendStatus: (userId, friendId) =>
+  axios.get(`${API_URL}/status`, { params: { userId, friendId } }),
+
+// FriendService.js
+getFriendStatus: (userId, friendId) =>
+  axios.get(`${API_URL}/status`, { params: { userId, friendId } }),
+
+  
 };
+
+
+
+    
 
 export default FriendService;

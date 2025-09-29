@@ -1,0 +1,52 @@
+.alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin: 10px 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s ease-out;
+    position: relative;
+    color: white;
+    z-index: 1000000;
+}
+
+.alert-info {
+    background: #3a86ff;
+}
+
+.alert-success {
+    background: #06d6a0;
+}
+
+.alert-warning {
+    background: #ffb703;
+    color: black;
+}
+
+.alert-error {
+    background: #ef233c;
+}
+
+.alert-close {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: inherit;
+    margin-left: 10px;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
