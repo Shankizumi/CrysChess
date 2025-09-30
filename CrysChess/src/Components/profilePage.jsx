@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import "./ProfilePage.css";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import userService from "../Services/userService"; // adjust path if needed
-import { setUser } from "../store/userSlice"; // if you update Redux store
+import userService from "../Services/userService"; // ensure correct path
+import { setUser, logout } from "../store/userSlice";
 import LogoutConfirmModal from "../Components/LogoutConfirmModal";
-import Alert from "./Alert"; // import Alert component
+import Alert from "./Alert";
 
 import {
+  fetchFriends,
   fetchPendingRequests,
   acceptFriendRequest,
   rejectFriendRequest,
@@ -17,13 +18,13 @@ import {
 import UserService from "../Services/userService";
 import FriendService from "../Services/friendService";
 import { persistor } from "../store/store";
-import { logout } from "../store/userSlice";
 
 export default function ProfilePage() {
   const [openFriends, setOpenFriends] = useState(false);
   const [activeTab, setActiveTab] = useState("friends");
   const [openSearch, setOpenSearch] = useState(false);
-  const [friendsData, setFriendsData] = useState([]);
+  const [friendsData, setFriendsData] = useState([]); // enriched friend user objects
+  const [pendingData, setPendingData] = useState([]); // enriched pending objects (contains requestId)
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -34,6 +35,8 @@ export default function ProfilePage() {
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
 
+
+  
   const user = useSelector((state) => state.user.user);
   const { friendList, pendingRequests, loading } = useSelector(
     (state) => state.friends
@@ -43,78 +46,166 @@ export default function ProfilePage() {
 
   useEffect(() => {
     refreshProfilePic();
-  }, [user?.id]); // runs once on load or when user.id changes
+  }, [user?.id]);
 
-  const isFriendOrPending = (userId) =>
-    friendList.some((f) => f.id === userId) ||
-    pendingRequests.some((p) => p.id === userId);
+  // openFriends toggles fetching of lists from Redux
+  useEffect(() => {
+    if (openFriends && user?.id) {
+      dispatch(fetchFriends(user.id));
+      dispatch(fetchPendingRequests(user.id));
+    }
+  }, [openFriends, user?.id, dispatch]);
 
-  // Fetch friends + pending requests + detailed friend data
-  // useEffect(() => {
-  //   if (!user?.id) return;
+  // === FIXED: build friendsData from friendList (use userId/friendId, not request id) ===
+  useEffect(() => {
+    const fetchFriendDetails = async () => {
+      if (!friendList || friendList.length === 0) {
+        setFriendsData([]);
+        return;
+      }
 
-  //   const fetchDetails = async () => {
-  //     dispatch(fetchFriends(user.id));
-  //     dispatch(fetchPendingRequests(user.id));
-  //     if (friendList.length > 0) {
-  //       try {
-  //         const detailed = await Promise.all(
-  //           friendList.map((f) =>
-  //             FriendService.friendData(f.id).then((res) => res.data)
-  //           )
-  //         );
-  //         setFriendsData(detailed);
-  //       } catch (err) {
-  //         console.error("Error fetching friend details:", err);
-  //       }
-  //     } else {
-  //       setFriendsData([]);
-  //     }
-  //   };
+      try {
+        // 1️⃣ Get unique friend IDs (the "other" user in the friendship)
+        const uniqueFriendIds = [
+          ...new Set(
+            friendList.map((friend) =>
+              friend.userId === user.id ? friend.friendId : friend.userId
+            )
+          ),
+        ];
 
-  //   fetchDetails();
-  // }, [user?.id, dispatch, friendList]);
+        // 2️⃣ Fetch details for each unique friend
+        const detailed = await Promise.all(
+          uniqueFriendIds.map(async (friendId) => {
+            try {
+              const userDetails = await userService.getUserById(friendId);
+              const avatar = await userService.getProfilePicture(friendId);
+              return { ...userDetails, avatar };
+            } catch (err) {
+              console.error("Failed to fetch friend details:", err);
+              return { id: friendId, username: "Unknown", avatar: null };
+            }
+          })
+        );
 
+        setFriendsData(detailed);
+      } catch (err) {
+        console.error("Error while fetching friends data:", err);
+      }
+    };
+
+    fetchFriendDetails();
+  }, [friendList, user.id]);
+
+  // === FIXED: build pendingData similarly, but keep requestId (accept/reject need it) ===
+ useEffect(() => {
+  const fetchPendingDetails = async () => {
+    if (!user?.id || !pendingRequests || pendingRequests.length === 0) {
+      setPendingData([]);
+      return;
+    }
+
+    try {
+      const detailed = await Promise.all(
+        pendingRequests
+          .filter((pr) => pr.friendId === user.id) // only requests **to me**
+          .map(async (pr) => {
+            const otherUserId = pr.userId; // sender
+
+            try {
+              const userDetails = await userService.getUserById(otherUserId);
+              const avatar = await userService.getProfilePicture(otherUserId).catch(() => null);
+
+              return {
+                requestId: pr.id,
+                id: otherUserId,
+                status: pr.status,
+                ...userDetails,
+                avatar,
+              };
+            } catch (err) {
+              console.error("Failed to fetch pending details for id", otherUserId, err);
+              return {
+                requestId: pr.id,
+                id: otherUserId,
+                username: "Unknown",
+                avatar: null,
+                status: pr.status,
+              };
+            }
+          })
+      );
+
+      setPendingData(detailed);
+    } catch (err) {
+      console.error("Error while fetching pending requests:", err);
+      setPendingData([]);
+    }
+  };
+
+  fetchPendingDetails();
+}, [pendingRequests, user?.id]);
+
+  // --- other handlers unchanged, small improvement: use requestId when accepting/rejecting ---
   const handleAddFriend = async (friendId) => {
     try {
       await dispatch(sendFriendRequest({ userId: user.id, friendId })).unwrap();
+
       setJustSent((prev) => [...prev, friendId]);
+
+      setSearchResults((prev) =>
+        prev.map((u) => (u.id === friendId ? { ...u, status: "PENDING" } : u))
+      );
+
       dispatch(fetchPendingRequests(user.id));
+      showAlert("success", "Friend request sent");
     } catch (error) {
+      console.error("sendFriendRequest error:", error);
       showAlert("error", error || "Failed to send friend request");
     }
   };
 
   const handleSearch = async () => {
-    if (!searchTerm.trim()) return; // prevent empty searches
+    if (!searchTerm.trim()) return;
     setOpenSearch(true);
     setSearchLoading(true);
     setSearchError(null);
 
     try {
-      // 1️⃣ Search users by term
       const results = await UserService.searchUsers(searchTerm.trim());
 
-      if (results.length === 0) {
+      if (!results || results.length === 0) {
         setSearchError("No users found");
         setSearchResults([]);
         return;
       }
 
-      // 2️⃣ Fetch profile picture for each user
       const detailedResults = await Promise.all(
-        results.map(async (user) => {
+        results.map(async (foundUser) => {
           try {
-            const avatar = await userService.getProfilePicture(user.id);
-            return { ...user, avatar };
+            const [avatar, statusRes] = await Promise.all([
+              userService.getProfilePicture(foundUser.id).catch(() => null),
+              FriendService.getFriendStatus(user.id, foundUser.id).catch(
+                () => ({ data: null })
+              ),
+            ]);
+
+            return {
+              ...foundUser,
+              avatar,
+              status: statusRes?.data || null,
+            };
           } catch (err) {
-            console.error("Failed to fetch avatar for user", user.id, err);
-            return { ...user, avatar: null }; // fallback
+            console.error(
+              "Failed fetching details for user",
+              foundUser.id,
+              err
+            );
+            return { ...foundUser, avatar: null, status: "UNKNOWN" };
           }
         })
       );
 
-      // 3️⃣ Update state with full data
       setSearchResults(detailedResults);
     } catch (error) {
       console.error("Search error:", error);
@@ -128,7 +219,6 @@ export default function ProfilePage() {
   const refreshProfilePic = async () => {
     if (!user?.id) return;
     try {
-      // ✅ call via userService, not directly
       const blobUrl = await userService.getProfilePicture(user.id);
       dispatch(setUser({ ...user, profilePictureUrl: blobUrl }));
     } catch (err) {
@@ -139,9 +229,7 @@ export default function ProfilePage() {
   const refreshUser = async () => {
     if (!user?.id) return;
     try {
-      // ✅ fetch latest user from backend
       const latestUser = await userService.getUserById(user.id);
-      // ✅ update Redux with fresh data
       dispatch(setUser(latestUser));
     } catch (err) {
       console.error("Failed to refresh user data:", err);
@@ -151,9 +239,10 @@ export default function ProfilePage() {
   const showAlert = (type, message) => {
     const id = Date.now();
     setAlerts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setAlerts((prev) => prev.filter((a) => a.id !== id));
-    }, 3000);
+    setTimeout(
+      () => setAlerts((prev) => prev.filter((a) => a.id !== id)),
+      3000
+    );
   };
 
   return (
@@ -178,6 +267,7 @@ export default function ProfilePage() {
           Logout
         </button>
       </div>
+
       {/* Profile Section */}
       <div className="profile-section cardProfile">
         <div className="avatar" onClick={() => setOpen(true)}>
@@ -188,11 +278,11 @@ export default function ProfilePage() {
               className="avatar-img"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "/default-avatar.png"; // fallback in case image is broken
+                e.target.src = "https://i.pravatar.cc/90";
               }}
             />
           ) : (
-            "👤" // default emoji if no profile picture
+            "👤"
           )}
         </div>
         <div>
@@ -221,6 +311,7 @@ export default function ProfilePage() {
           <button className="btn-outline">Donate</button>
         </div>
       </div>
+
       {/* Friends Modal */}
       {openFriends && (
         <div
@@ -285,8 +376,8 @@ export default function ProfilePage() {
               <div className="cardCont">
                 {loading ? (
                   <p>Loading pending requests...</p>
-                ) : pendingRequests.length > 0 ? (
-                  pendingRequests.map((req) => (
+                ) : pendingData.length > 0 ? (
+                  pendingData.map((req) => (
                     <div key={req.id} className="friendcardProfile">
                       <img
                         src={req.avatar || "https://i.pravatar.cc/90"}
@@ -299,13 +390,17 @@ export default function ProfilePage() {
                       </div>
                       <button
                         className="btn"
-                        onClick={() => dispatch(acceptFriendRequest(req.id))}
+                        onClick={() =>
+                          dispatch(acceptFriendRequest(req.requestId))
+                        }
                       >
                         Accept
                       </button>
                       <button
                         className="btn-outline"
-                        onClick={() => dispatch(rejectFriendRequest(req.id))}
+                        onClick={() =>
+    dispatch(removeFriend({ userId: user.id, friendId: req.id }))
+                        }
                       >
                         Reject
                       </button>
@@ -328,6 +423,7 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
       {/* Search Modal */}
       {openSearch && (
         <div
@@ -358,14 +454,16 @@ export default function ProfilePage() {
                       <button
                         className="btn-outline"
                         disabled={
-                          isFriendOrPending(result.id) ||
+                          result.status === "PENDING" ||
+                          result.status === "ACCEPTED" ||
                           justSent.includes(result.id)
                         }
                         onClick={() => handleAddFriend(result.id)}
                       >
-                        {isFriendOrPending(result.id) ||
-                        justSent.includes(result.id)
-                          ? "Request Sent"
+                        {result.status === "PENDING"
+                          ? "Request Pending"
+                          : result.status === "ACCEPTED"
+                          ? "Friends"
                           : "Add Friend"}
                       </button>
                     </div>
@@ -386,15 +484,13 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-      {/* Modal for Profile Info */}
+
+      {/* Profile Edit Modal (unchanged) */}
       {open && (
         <div className="modal-overlay" onClick={() => setOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Edit Profile</h2>
-
             <div className="modal-form">
-              {/* Username */}
-
               <div>
                 <label>Username</label>
                 <input
@@ -404,8 +500,6 @@ export default function ProfilePage() {
                   id="username-input"
                 />
               </div>
-
-              {/* Password */}
               <div>
                 <label>Password</label>
                 <input
@@ -415,8 +509,6 @@ export default function ProfilePage() {
                   id="password-input"
                 />
               </div>
-
-              {/* Email */}
               <div>
                 <label>Email</label>
                 <input
@@ -427,7 +519,6 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {/* Non-editable stats */}
               <div className="stats">
                 <div>
                   <p>Wins: {user?.wins || 0}</p>
@@ -435,7 +526,6 @@ export default function ProfilePage() {
                   <p>Global Rank: {user?.rank || "N/A"}</p>
                 </div>
 
-                {/* Profile Picture / Avatar */}
                 <div className="profile-pic-wrapper">
                   <img
                     src={
@@ -492,7 +582,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Save Changes Button */}
               <p id="st" className="st"></p>
 
               <button
@@ -504,34 +593,21 @@ export default function ProfilePage() {
                     document.getElementById("password-input").value;
 
                   try {
-                    // 1️⃣ Update credentials
                     await userService.updateCredentials(
                       user.id,
                       newUsername,
                       newPassword
                     );
-
-                    // 2️⃣ Get latest user (without profilePictureUrl)
                     const latestUser = await userService.getUserById(user.id);
-
-                    // 3️⃣ Fetch latest profile picture separately
                     const blobUrl = await userService.getProfilePicture(
                       user.id
                     );
-
-                    // 4️⃣ Merge user + profile picture into Redux
                     dispatch(
-                      setUser({
-                        ...latestUser,
-                        profilePictureUrl: blobUrl,
-                      })
+                      setUser({ ...latestUser, profilePictureUrl: blobUrl })
                     );
-
-                    // 5️⃣ Close modal
                     setOpen(false);
                   } catch (err) {
                     console.error(err);
-                    // alert(err.message);
                     document.getElementById("st").innerText = err.message;
                   }
                 }}

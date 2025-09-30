@@ -43,20 +43,22 @@ export const acceptFriendRequest = createAsyncThunk(
   }
 );
 
+
+export const fetchFriendData = createAsyncThunk(
+  "friends/fetchFriendData",
+  async (userId) => {
+    const response = await FriendService.friendData(userId);
+    return response.data;
+  }
+);
+
+
 export const rejectFriendRequest = createAsyncThunk(
   "friends/rejectFriendRequest",
   async (requestId, { dispatch, getState }) => {
     const response = await FriendService.rejectRequest(requestId);
     const userId = getState().user.user.id;
     dispatch(fetchPendingRequests(userId));
-    return response.data;
-  }
-);
-
-export const fetchFriendData = createAsyncThunk(
-  "friends/fetchFriendData",
-  async (userId) => {
-    const response = await FriendService.friendData(userId);
     return response.data;
   }
 );

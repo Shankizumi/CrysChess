@@ -5,6 +5,7 @@ import com.shanks.game.boardgame_backend.dto.entity.Friend;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +19,6 @@ public class FriendService {
     public Friend sendRequest(Long userId, Long friendId) {
         Optional<Friend> existing = friendRepository.findByUserIdAndFriendId(userId, friendId);
         Optional<Friend> reverse = friendRepository.findByUserIdAndFriendId(friendId, userId);
-
         if (existing.isPresent() || reverse.isPresent()) {
             throw new RuntimeException("Friend request already exists or you are already friends");
         }
@@ -70,7 +70,13 @@ public class FriendService {
 
     // ✅ View Pending Requests (for a user)
     public List<Friend> getPendingRequests(Long userId) {
-        return friendRepository.findByFriendIdAndStatus(userId, "PENDING");
+        List<Friend> incoming = friendRepository.findByFriendIdAndStatus(userId, "PENDING");
+        List<Friend> outgoing = friendRepository.findByUserIdAndStatus(userId, "PENDING");
+
+        List<Friend> all = new ArrayList<>();
+        all.addAll(incoming);
+        all.addAll(outgoing);
+        return all;
     }
 
     // ✅ Remove Friend (both directions)
