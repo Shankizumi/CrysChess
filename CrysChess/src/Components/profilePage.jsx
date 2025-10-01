@@ -97,8 +97,7 @@ export default function ProfilePage() {
     fetchFriendDetails();
   }, [friendList, user.id]);
 
-  // === FIXED: build pendingData similarly, but keep requestId (accept/reject need it) ===
- useEffect(() => {
+  useEffect(() => {
   const fetchPendingDetails = async () => {
     if (!user?.id || !pendingRequests || pendingRequests.length === 0) {
       setPendingData([]);
@@ -165,6 +164,14 @@ export default function ProfilePage() {
     }
   };
 
+
+  const handleRemoveOrReject = async (friendId) => {
+  await dispatch(removeFriend({ userId: user.id, friendId }));
+  dispatch(fetchFriends(user.id));
+  dispatch(fetchPendingRequests(user.id));
+};
+
+
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
     setOpenSearch(true);
@@ -216,6 +223,8 @@ export default function ProfilePage() {
     }
   };
 
+
+
   const refreshProfilePic = async () => {
     if (!user?.id) return;
     try {
@@ -225,6 +234,7 @@ export default function ProfilePage() {
       console.error("Failed to refresh profile picture:", err);
     }
   };
+
 
   const refreshUser = async () => {
     if (!user?.id) return;
@@ -337,7 +347,7 @@ export default function ProfilePage() {
 
             {activeTab === "friends" && (
               <div className="cardCont">
-                {loading ? (
+                {loading && friendsData.length === 0 ?(
                   <p>Loading friends...</p>
                 ) : friendsData.length > 0 ? (
                   friendsData.map((friend) => (
@@ -353,14 +363,8 @@ export default function ProfilePage() {
                       </div>
                       <button
                         className="btn-outline"
-                        onClick={() =>
-                          dispatch(
-                            removeFriend({
-                              userId: user.id,
-                              friendId: friend.id,
-                            })
-                          )
-                        }
+  onClick={() => handleRemoveOrReject(friend.id)}
+
                       >
                         Remove
                       </button>
@@ -374,7 +378,7 @@ export default function ProfilePage() {
 
             {activeTab === "pending" && (
               <div className="cardCont">
-                {loading ? (
+                {loading && pendingData.length === 0 ?(
                   <p>Loading pending requests...</p>
                 ) : pendingData.length > 0 ? (
                   pendingData.map((req) => (
@@ -398,9 +402,8 @@ export default function ProfilePage() {
                       </button>
                       <button
                         className="btn-outline"
-                        onClick={() =>
-    dispatch(removeFriend({ userId: user.id, friendId: req.id }))
-                        }
+  onClick={() => handleRemoveOrReject(req.id)}
+
                       >
                         Reject
                       </button>
