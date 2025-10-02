@@ -13,6 +13,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/friends")
+//this is for url
+
+
 public class FriendController {
 
     @Autowired
