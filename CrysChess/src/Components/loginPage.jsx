@@ -4,6 +4,8 @@ import "./loginPage.css";
 import userService from "../Services/userService";
 import { useDispatch } from "react-redux";
 import { setUser } from "../store/userSlice";
+import Alert from "../Components/Alert";
+
 
 export default function LoginPage() {
   const [tab, setTab] = useState("login"); // "login" | "register"
@@ -15,7 +17,7 @@ export default function LoginPage() {
   });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState(null);
-
+  const [alert, setAlert] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
@@ -28,6 +30,10 @@ export default function LoginPage() {
 
   const onChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  };
+
+    const showAlert = (type, message) => {
+    setAlert({ type, message });
   };
 
   const validate = () => {
@@ -88,24 +94,36 @@ export default function LoginPage() {
         setForm({ email: "", password: "", username: "", confirm: "" });
         setErrors({});
         
+
+          showAlert("success", "Registered successfully! Redirecting to login...");
+
         // Switch tab to login
-        setTab("login");
-        navigate("/login");
+  setTimeout(() => {
+    setTab("login");
+    navigate("/login");
+  }, 2000);
       }
     } catch (err) {
       setServerError(err.message);
+      showAlert("error", err.message);
     }
   };
 
   return (
+
+
+
+    
     <div className="auth-page">
+
+
       <div className="auth-card">
         <div className="brand">
           <span className="crys">Join</span>
           <span className="chess">Us</span>
         </div>
 
-        {serverError && <p className="server-error">{serverError}</p>}
+        {/* {serverError && <p className="server-error">{serverError}</p>} */}
 
         <div className="tabs" role="tablist" aria-label="Auth Tabs">
           <button
@@ -202,6 +220,16 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
+
+      
+          {alert && (
+      <Alert
+        type={alert.type}
+        message={alert.message}
+        duration={2000}
+        onClose={() => setAlert(null)}
+      />
+    )}
     </div>
   );
 }

@@ -58,7 +58,7 @@ body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI
 /* Auth card */
 .auth-card{
   position: relative;
-  z-index: 1;
+  z-index: 100;
   width: clamp(800px, 92vw, 430px);
   padding: 28px 24px;
   border-radius: 18px;
@@ -200,6 +200,9 @@ input:focus{
 }
 @media (max-width: 420px){
   .auth-card{ width: 92vw; padding: 22px 18px; }
+  .alert{
+    margin-top: 50px !important;
+  }
 }
 
 
