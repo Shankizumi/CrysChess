@@ -1,4 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { connectSocket } from "../Services/socketService";
+import { useSelector } from "react-redux";
+import { sendFriendRequest } from "../store/friendSlice";
+import userService from "../Services/userService";
+import { useDispatch } from "react-redux";
+import FriendService from "../Services/friendService";
+import { sendEnd, getActiveGameId } from "../Services/socketService";
+
+import { useNavigate } from "react-router-dom";
+
 import "./GameBoard.css";
 
 const BOARD_SIZE = 8;
@@ -38,7 +48,6 @@ const RulesModal = ({ open, onClose }) => {
         <div className="rules-body">
           <h3>Quick summary</h3>
           <ul>
-
             <li>
               Turn-based: <b>red</b> starts first. Each successful move or
               activation consumes the current player's turn.
@@ -53,9 +62,7 @@ const RulesModal = ({ open, onClose }) => {
               <b>star (exact 5)</b>, <b>hexa (exact 6)</b>. Exact length
               detection only — not part of longer runs.
             </li>
-            <li>
-              Activation: double-click on your special stone to activate. 
-            </li>
+            <li>Activation: double-click on your special stone to activate.</li>
             <li>
               Win: counts are checked after every change. If one player has &lt;
               3 stones and the opponent has ≥ 3, the opponent wins. If both &lt;
@@ -88,7 +95,7 @@ const RulesModal = ({ open, onClose }) => {
               <ul>
                 <li>
                   The game scans rows and columns for runs of exactly 3, 4, 5,
-                  or 6 stones of the same base color. 
+                  or 6 stones of the same base color.
                 </li>
                 <li>
                   For <b>quad (4)</b>, <b>star (5)</b> and <b>hexa (6)</b>{" "}
@@ -173,7 +180,6 @@ const RulesModal = ({ open, onClose }) => {
               </ul>
             </li>
 
-
             <li>
               <b>Ownership & restrictions</b>
               <ul>
@@ -224,6 +230,125 @@ const RulesModal = ({ open, onClose }) => {
 };
 
 const GameBoard = () => {
+  const [gameOver, setGameOver] = useState(false);
+  const gameId = useSelector((state) => state.game.gameId);
+
+  const { gameData } = useSelector((state) => state.game);
+  const [player1Details, setPlayer1Details] = useState(null);
+  const [player2Details, setPlayer2Details] = useState(null);
+  const user = useSelector((state) => state.user.user);
+  const friendList = useSelector((state) => state.friends.friendList);
+  const opponentId = player2Details?.id;
+  const dispatch = useDispatch();
+  const { pendingRequests } = useSelector((state) => state.friends);
+  const [friendStatus, setFriendStatus] = useState(null);
+
+
+  const navigate = useNavigate();
+
+  // ✅ Decide opponent based on whether user is player1 or player2
+  const opponent =
+    user?.id === player1Details?.id ? player2Details : player1Details;
+
+  const isFriend = friendList.some(
+    (f) =>
+      (f.userId === user.id && f.friendId === opponentId) ||
+      (f.friendId === user.id && f.userId === opponentId)
+  );
+
+  const isCurrentPlayer1 = Boolean(
+    user?.id && gameData?.player1?.id && user.id === gameData.player1.id
+  );
+
+  // Derived player objects (may be undefined while waiting)
+  const leftPlayer = isCurrentPlayer1 ? gameData?.player1 : gameData?.player2;
+  const rightPlayer = isCurrentPlayer1 ? gameData?.player2 : gameData?.player1;
+
+  useEffect(() => {
+    if (!opponent?.id || !user?.id || !pendingRequests) return;
+
+    const exists = pendingRequests.some((req) => {
+      const isBetween =
+        (req.userId === user.id && req.friendId === opponent.id) ||
+        (req.userId === opponent.id && req.friendId === user.id);
+
+      return req.status === "PENDING" && isBetween;
+    });
+  }, [opponent, pendingRequests, user]);
+
+  useEffect(() => {
+    if (!user?.id || !opponent?.id) return;
+
+    const loadStatus = async () => {
+      try {
+        const res = await FriendService.getFriendStatus(user.id, opponent.id);
+        setFriendStatus(res.data); // ✅ PENDING / ACCEPTED / NONE
+      } catch (err) {
+        console.error("Failed to load friend status:", err);
+      }
+    };
+
+    loadStatus();
+  }, [user?.id, opponent?.id]);
+
+
+
+  useEffect(() => {
+    if (!gameData) return;
+
+    // Derive who should appear left/right for THIS logged-in user
+    const isPlayer1 = Boolean(
+      user?.id && gameData.player1 && user.id === gameData.player1.id
+    );
+    const lp = isPlayer1 ? gameData.player1 : gameData.player2;
+    const rp = isPlayer1 ? gameData.player2 : gameData.player1;
+
+    // Reset while loading so UI doesn't briefly show stale values
+    setPlayer1Details(null);
+    setPlayer2Details(null);
+
+    if (lp?.id) {
+      userService
+        .getUserById(lp.id)
+        .then(setPlayer1Details)
+        .catch(() => setPlayer1Details(null));
+    }
+    if (rp?.id) {
+      userService
+        .getUserById(rp.id)
+        .then(setPlayer2Details)
+        .catch(() => setPlayer2Details(null));
+    }
+  }, [gameData, user?.id]);
+
+  const handleAddFriend = async () => {
+    try {
+      await FriendService.sendRequest(user.id, opponent.id);
+      setFriendStatus("PENDING"); // ✅ instantly update
+    } catch (err) {
+      console.error("sendRequest error:", err);
+    }
+  };
+
+  const handleGiveUp = () => {
+    const activeId = getActiveGameId();
+    if (!activeId) {
+      console.error("No active game ID found.");
+      return;
+    }
+
+    const winnerUsername = opponent?.username || "Opponent";
+
+    console.log("🏳 Player gave up! Winner:", winnerUsername);
+
+    // 🔥 Immediately show modal
+    setWinner(winnerUsername);
+    setGameOver(true);
+
+    // Notify backend
+    sendEnd(activeId, winnerUsername);
+  };
+
   // ----------------- Helpers -----------------
   const createInitialBoard = () => {
     const board = Array.from({ length: BOARD_SIZE }, () =>
@@ -251,7 +376,7 @@ const GameBoard = () => {
   const makeHexa = (color) => `${color}-hexa`;
 
   useEffect(() => {
-    if (winner) return; // don't re-check once game is over
+    if (winner || gameOver) return; // stop if game already finished
 
     let redCount = 0;
     let blueCount = 0;
@@ -264,14 +389,27 @@ const GameBoard = () => {
       });
     });
 
+    let newWinner = null;
     if (redCount < 3 && blueCount >= 3) {
-      setWinner("Blue");
+      newWinner = "Blue";
     } else if (blueCount < 3 && redCount >= 3) {
-      setWinner("Red");
+      newWinner = "Red";
     } else if (redCount < 3 && blueCount < 3) {
-      setWinner("Draw");
+      newWinner = "Draw";
     }
-  }, [board, winner]);
+
+    if (newWinner) {
+      setWinner(newWinner);
+      setGameOver(true);
+
+      // 🔥 Show the modal
+
+      // Send to backend only if it's not a draw
+      if (newWinner !== "Draw") {
+        sendEnd(gameId, newWinner);
+      }
+    }
+  }, [board, winner, gameOver, gameId]);
 
   const isValidMove = (fromRow, fromCol, toRow, toCol) => {
     const dx = Math.abs(fromRow - toRow);
@@ -282,7 +420,7 @@ const GameBoard = () => {
   const withinBounds = (r, c) =>
     r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
 
-  // (scanLine is present but we use explicit loops for clarity & parity with your original logic)
+  // (scanLine is present but we use explicit loops for clarity & parity with original logic)
   const scanLine = (line, getCell, len, exactLen, handler) => {
     for (let i = 0; i <= BOARD_SIZE - len; i++) {
       const color = baseColor(getCell(i));
@@ -316,6 +454,12 @@ const GameBoard = () => {
    * - detect exact 3 → destroys adjacent enemies
    * - animate enemy removals, then apply removals + place spawns
    */
+
+  useEffect(() => {
+    connectSocket(gameId, (updatedGame) => {
+      setBoard(JSON.parse(updatedGame.boardState));
+    });
+  }, []);
 
   const checkAndDestroy = (newBoard) => {
     const updated = newBoard.map((r) => [...r]);
@@ -903,11 +1047,9 @@ const GameBoard = () => {
 
   const handleDragOver = (e) => e.preventDefault();
 
-  // click selects/moves; double-click on a piece activates quad or star or hexa
   const handleCellClick = (row, col) => {
     const piece = board[row][col];
 
-    // selection / move flow (do NOT auto-activate on single click)
     if (selected) {
       if (
         !piece &&
@@ -919,9 +1061,23 @@ const GameBoard = () => {
         newBoard[selected.row][selected.col] = null;
         newBoard = checkAndDestroy(newBoard);
 
+        // calculate the next turn
+        const nextTurn = turn === "red" ? "blue" : "red";
+
+        // update local UI
         setBoard(newBoard);
         setSelected(null);
-        setTurn((p) => (p === "red" ? "blue" : "red"));
+        setTurn(nextTurn);
+
+        // 🧩 send updated board state to backend via parent prop
+        if (onMove) {
+          onMove(
+            JSON.stringify({
+              board: newBoard,
+              turn: nextTurn,
+            })
+          );
+        }
       } else {
         setSelected(null);
       }
@@ -989,21 +1145,23 @@ const GameBoard = () => {
 
         <div className="rank-card">
           <p>Your Rank</p>
-          <h3>#76421</h3>
+          <h3>#{player1Details?.rank || "----"}</h3>
           <small>Worldwide</small>
         </div>
 
         <div className="profile-card">
           <img
-            src="https://via.placeholder.com/80"
-            // alt="Profile"
+            src={player1Details?.profilePictureUrl || "/default-avatar.png"}
+            alt={player1Details?.username || "Player"}
             className="profile-pic"
           />
-          <p>Username</p>
+          <p>{player1Details?.username || "Loading..."}</p>
         </div>
 
         <div className="bottom-buttons">
-          <button className="logout-btn">🚪 Give Up!</button>
+          <button className="logout-btn" onClick={handleGiveUp}>
+            🚪 Give Up!
+          </button>
           <button className="donate-btn">💖 Donate</button>
         </div>
       </div>
@@ -1013,6 +1171,7 @@ const GameBoard = () => {
         <div className="game-board-container">
           <div className="board">{renderBoard()}</div>
           <div className="turn-indicator">Turn: {turn.toUpperCase()}</div>
+
           {winner && (
             <div className="winner-message">
               {winner === "Draw"
@@ -1028,7 +1187,7 @@ const GameBoard = () => {
         <div className="chat-box">
           <div className="messages">
             <p>
-              <b>Opponent:</b> Good luck!
+              <b>{player2Details?.username || "Opponent"}:</b> Good luck!
             </p>
             <p>
               <b>You:</b> Thanks 🚀
@@ -1042,15 +1201,26 @@ const GameBoard = () => {
 
         <div className="opponent-card">
           <img
-            src="https://via.placeholder.com/60"
-            // alt="Opponent"
+            src={player2Details?.profilePictureUrl || "/default-avatar.png"}
+            alt={player2Details?.username || "Opponent"}
             className="opponent-pic"
           />
-          <p>Opponent</p>
-          <small>Rank: #89321</small>
-          <button className="friend-btn">+ Add Friend</button>
+          <p>{player2Details?.username || "Waiting..."}</p>
+          <small>Rank: #{player2Details?.rank || "----"}</small>
+          <button
+            className="friend-btn"
+            disabled={friendStatus === "PENDING" || friendStatus === "ACCEPTED"}
+            onClick={handleAddFriend}
+          >
+            {friendStatus === "PENDING"
+              ? "Request Pending"
+              : friendStatus === "ACCEPTED"
+              ? "Friends"
+              : "Add Friend"}
+          </button>
         </div>
       </div>
+
       <RulesModal open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
   );

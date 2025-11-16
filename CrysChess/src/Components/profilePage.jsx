@@ -255,6 +255,38 @@ export default function ProfilePage() {
     );
   };
 
+
+const handlePlayWorld = async () => {
+  try {
+    if (!user || !user.id) {
+      alert("User not logged in!");
+      return;
+    }
+
+    const res = await fetch(`http://localhost:8080/games/find-or-create?userId=${user.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) throw new Error("Failed to create/find game");
+
+    const game = await res.json();
+
+    if (!game?.id) throw new Error("Invalid game returned from server");
+
+    if (game.status === "WAITING") {
+      console.log("Waiting for another player to join…");
+    }
+
+    navigate(`/multiplayer/${game.id}`);
+  } catch (err) {
+    console.error("Error finding match:", err);
+    alert("Failed to start a multiplayer game. Try again!");
+  }
+};
+
+
+
   return (
     <div className="page-container">
       {/* Search Bar + Logout */}
@@ -314,7 +346,7 @@ export default function ProfilePage() {
         <div className="button-group">
           <button className="btn">Practice with AI</button>
           <button className="btn">Invite a Friend for VS</button>
-          <button className="btn">Play VS the World</button>
+          <button className="btn" onClick={handlePlayWorld}>Play VS the World</button>
           <button className="btn">See Global Rank Players</button>
         </div>
         <div className="donate-container">

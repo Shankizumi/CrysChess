@@ -1,0 +1,257 @@
+/* ========= BASE CONTAINER ========= */
+.match-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  color: white;
+  font-family: "Trebuchet MS", sans-serif;
+  text-align: center;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+
+  /* Fade-in animation when component loads */
+  opacity: 0;
+  transform: translateY(25px);
+  animation: fadeInScreen 1s ease forwards;
+}
+
+/* ========= DARK OVERLAY (READABILITY BOOST) ========= */
+.match-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 0;
+
+  /* Animated overlay to add life */
+  animation: overlayPulse 6s ease-in-out infinite alternate;
+}
+
+/* Keep content above overlay */
+.match-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ========= PAGE TRANSITION CLASSES ========= */
+.fade-screen {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInScreen 0.8s ease forwards;
+}
+
+.slide-out {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.8s ease;
+}
+
+/* ========= FIND MATCH / WAITING SCREEN ========= */
+.waiting-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+    background-image: url("../assets/3.png");
+
+}
+
+.find-btn {
+  background: linear-gradient(145deg, #7c3aed, #5b21b6);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 14px rgba(124, 58, 237, 0.6);
+  transition: all 0.25s ease;
+    will-change: opacity, transform;
+
+}
+
+.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+.find-btn:hover {
+  background: linear-gradient(145deg, #9d4efc, #7c3aed);
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(157, 78, 252, 0.8);
+}
+
+.loading-text {
+  color: white;
+  font-size: 1.1rem;
+  background-color: black;
+  padding: 10px;
+border-radius: 10px;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+  margin-top: 20px;
+  letter-spacing: 0.5px;
+  animation: fadeBlink 2s infinite ease-in-out;
+    will-change: opacity, transform;
+
+}
+
+/* ========= MATCH INFO ========= */
+.match-title {
+  font-size: 2.2rem;
+  color: #c4a2ff;
+  text-shadow: 0 0 10px rgba(196, 162, 255, 0.6);
+  margin-bottom: 8px;
+  animation: fadeInText 1.2s ease forwards;
+}
+
+.match-id {
+  color: #ddd;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+  animation: fadeInText 1.6s ease forwards;
+}
+
+/* ========= PLAYER SECTION ========= */
+.player-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  margin-bottom: 20px;
+}
+
+.player {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 12px 24px;
+  border-radius: 12px;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.15);
+  min-width: 150px;
+  backdrop-filter: blur(8px);
+  transition: transform 0.4s ease;
+}
+
+.player:hover {
+  transform: scale(1.05);
+}
+
+.player h4 {
+  color: #ffd580;
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.player p {
+  color: #ccc;
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.vs {
+  font-size: 2.2rem;
+  color: #fca5a5;
+  text-shadow: 0 0 8px rgba(252, 165, 165, 0.7);
+  animation: fadeBlink 3s infinite ease-in-out;
+}
+
+/* ========= STATUS ========= */
+.status {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.status-text {
+  color: #7aff9b;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(122, 255, 155, 0.8);
+  animation: fadeInText 2s ease forwards;
+}
+
+/* ========= GAME BOARD WRAPPER ========= */
+.board-wrapper {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.8s ease;
+}
+
+/* ========= END BUTTON ========= */
+.end-button {
+  margin-top: 25px;
+  padding: 12px 26px;
+  font-size: 1.05rem;
+  background: linear-gradient(135deg, #ff4d4d, #cc0000);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.5);
+}
+
+.end-button:hover {
+  background: linear-gradient(135deg, #ff6b6b, #ff0000);
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+}
+
+/* ========= KEYFRAMES ========= */
+
+/* Fade in + slide */
+@keyframes fadeInScreen {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Overlay breathing effect */
+@keyframes overlayPulse {
+  from {
+    background: rgba(0, 0, 0, 0.55);
+  }
+  to {
+    background: rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Text fade */
+@keyframes fadeInText {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Gentle blinking for VS and Waiting Text */
+@keyframes fadeBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
