@@ -27,21 +27,17 @@ export default function MultiPlayerMatch() {
   const [winnerModalVisible, setWinnerModalVisible] = useState(false);
   const [winner, setWinner] = useState(null);
 
-
-  
-  
-
   // 🔹 Join existing game if URL has gameId
 
-    useEffect(() => {
-      if (!winnerModalVisible) return;
-  
-      const timer = setTimeout(() => {
-        navigate("/ProfilePage");
-      }, 10000); // 10 sec
-  
-      return () => clearTimeout(timer);
-    }, [winnerModalVisible]);
+  useEffect(() => {
+    if (!winnerModalVisible) return;
+
+    const timer = setTimeout(() => {
+      navigate("/ProfilePage");
+    }, 10000); // 10 sec
+
+    return () => clearTimeout(timer);
+  }, [winnerModalVisible]);
 
   useEffect(() => {
     if (!gameId) return;
@@ -49,36 +45,33 @@ export default function MultiPlayerMatch() {
     console.log("🌐 Auto-joining existing game:", gameId);
     dispatch(setGameId(gameId));
 
-connectSocket(gameId, (updatedGame) => {
-  console.log("📡 [SOCKET UPDATE]", updatedGame);
+    connectSocket(gameId, (updatedGame) => {
+      console.log("📡 [SOCKET UPDATE]", updatedGame);
 
-  setGame(updatedGame);
-  dispatch(setGameData(updatedGame));
+      setGame(updatedGame);
+      dispatch(setGameData(updatedGame));
 
-  // ✅ Game started
-  if (updatedGame?.status === "IN_PROGRESS") {
-    setLoading(false);
-    setIsConnected(true);
-  }
+      // ✅ Game started
+      if (updatedGame?.status === "IN_PROGRESS") {
+        setLoading(false);
+        setIsConnected(true);
+      }
 
-  // ⭐️ GAME FINISHED → Handle it for BOTH players
-if (updatedGame?.status === "FINISHED") {
-  const winner = updatedGame.winner?.username || updatedGame.winner;
-  
-  console.log("🏁 Game finished! Winner:", winner);
+      // ⭐️ GAME FINISHED → Handle it for BOTH players
+      if (updatedGame?.status === "FINISHED") {
+        const winner = updatedGame.winner?.username || updatedGame.winner;
 
-  setWinner(winner);
-  setWinnerModalVisible(true);
+        console.log("🏁 Game finished! Winner:", winner);
 
-  // redirect after 8 sec
-  setTimeout(() => {
-    window.location.href = "/ProfilePage";
-  }, 8000);
-}
+        setWinner(winner);
+        setWinnerModalVisible(true);
 
-
-});
-
+        // redirect after 8 sec
+        setTimeout(() => {
+          window.location.href = "/ProfilePage";
+        }, 8000);
+      }
+    });
 
     setTimeout(() => {
       console.log("🚀 Sending JOIN for:", gameId);
@@ -161,18 +154,17 @@ if (updatedGame?.status === "FINISHED") {
   };
 
   const handleGiveUp = () => {
-  if (!game) return;
-  if (game.status === "FINISHED") return alert("Game already ended!");
+    if (!game) return;
+    if (game.status === "FINISHED") return alert("Game already ended!");
 
-  // The opponent becomes the winner
-  const winnerUsername =
-    game.player1 === username ? game.player2 : game.player1;
+    // The opponent becomes the winner
+    const winnerUsername =
+      game.player1 === username ? game.player2 : game.player1;
 
-  console.log("🏳️ You gave up! Winner:", winnerUsername);
+    console.log("🏳️ You gave up! Winner:", winnerUsername);
 
-  sendEnd(game.id, winnerUsername); // ✅ sendEnd already exists
-};
-
+    sendEnd(game.id, winnerUsername); // ✅ sendEnd already exists
+  };
 
   // 🔹 Render
   return (
@@ -180,26 +172,20 @@ if (updatedGame?.status === "FINISHED") {
       {game && isConnected ? (
         <GameBoard
           gameId={game.id}
-          board={
-            (() => {
-              try {
-                return game.boardState ? JSON.parse(game.boardState).board : [];
-              } catch {
-                return [];
-              }
-            })()
-          }
-          turn={
-            (() => {
-              try {
-                return game.boardState
-                  ? JSON.parse(game.boardState).turn
-                  : "red";
-              } catch {
-                return "red";
-              }
-            })()
-          }
+          board={(() => {
+            try {
+              return game.boardState ? JSON.parse(game.boardState).board : [];
+            } catch {
+              return [];
+            }
+          })()}
+          turn={(() => {
+            try {
+              return game.boardState ? JSON.parse(game.boardState).turn : "red";
+            } catch {
+              return "red";
+            }
+          })()}
           onMove={handleMove}
         />
       ) : (
@@ -217,12 +203,12 @@ if (updatedGame?.status === "FINISHED") {
           )}
         </div>
       )}
-            {winnerModalVisible && (
-              <WinnerModal
-  winner={winner?.username || winner}
-                onFinish={() => navigate("/ProfilePage")}
-              />
-            )}
+      {winnerModalVisible && (
+        <WinnerModal
+          winner={winner?.username || winner}
+          onFinish={() => navigate("/ProfilePage")}
+        />
+      )}
     </>
   );
 }

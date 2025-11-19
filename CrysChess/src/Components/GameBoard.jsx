@@ -6,7 +6,7 @@ import userService from "../Services/userService";
 import { useDispatch } from "react-redux";
 import FriendService from "../Services/friendService";
 import { sendEnd, getActiveGameId } from "../Services/socketService";
-
+import { sendChat, registerChatListener, unregisterChatListener } from "../Services/socketService";
 import { useNavigate } from "react-router-dom";
 
 import "./GameBoard.css";
@@ -232,7 +232,6 @@ const RulesModal = ({ open, onClose }) => {
 const GameBoard = () => {
   const [gameOver, setGameOver] = useState(false);
   const gameId = useSelector((state) => state.game.gameId);
-
   const { gameData } = useSelector((state) => state.game);
   const [player1Details, setPlayer1Details] = useState(null);
   const [player2Details, setPlayer2Details] = useState(null);
@@ -242,6 +241,8 @@ const GameBoard = () => {
   const dispatch = useDispatch();
   const { pendingRequests } = useSelector((state) => state.friends);
   const [friendStatus, setFriendStatus] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]); // { sender, text, timestamp }
+  const [chatInput, setChatInput] = useState("");
 
 
   const navigate = useNavigate();
@@ -261,6 +262,24 @@ const GameBoard = () => {
   );
 
   // Derived player objects (may be undefined while waiting)
+
+  useEffect(() => {
+    // register local listener to receive chat messages delivered by socketService
+    const listener = (msg) => {
+      // msg shape: { sender, text, timestamp }
+      setChatMessages((prev) => [...prev, msg]);
+    };
+
+    const unsubscribe = registerChatListener(listener);
+
+    // Cleanup on unmount
+    return () => {
+      unsubscribe();
+      // also remove if using unregisterChatListener
+      unregisterChatListener(listener);
+    };
+  }, []); // no props - single listener for whole component lifecycle
+
   const leftPlayer = isCurrentPlayer1 ? gameData?.player1 : gameData?.player2;
   const rightPlayer = isCurrentPlayer1 ? gameData?.player2 : gameData?.player1;
 
@@ -290,8 +309,6 @@ const GameBoard = () => {
 
     loadStatus();
   }, [user?.id, opponent?.id]);
-
-
 
   useEffect(() => {
     if (!gameData) return;
@@ -348,6 +365,31 @@ const GameBoard = () => {
     // Notify backend
     sendEnd(activeId, winnerUsername);
   };
+
+
+const sendChatMessage = () => {
+  const text = (chatInput || "").trim();
+  if (!text) return;
+
+  const message = {
+    sender: user?.username || "You",
+    text,
+    timestamp: Date.now(),
+  };
+
+  const activeId = gameId || getActiveGameId();
+  if (!activeId) {
+    console.warn("No active game id for chat");
+    setChatInput("");
+    return;
+  }
+
+  // send over socket only (remove local echo)
+  sendChat(activeId, message);
+
+  // clear input — UI will update when server echoes the message
+  setChatInput("");
+};
 
   // ----------------- Helpers -----------------
   const createInitialBoard = () => {
@@ -1106,9 +1148,8 @@ const GameBoard = () => {
     return (
       <div
         key={`${row}-${col}`}
-        className={`cell ${
-          selected?.row === row && selected?.col === col ? "selected" : ""
-        }`}
+        className={`cell ${selected?.row === row && selected?.col === col ? "selected" : ""
+          }`}
         onClick={() => handleCellClick(row, col)}
         onDrop={(e) => handleDrop(e, row, col)}
         onDragOver={handleDragOver}
@@ -1186,18 +1227,39 @@ const GameBoard = () => {
       <div className="sidebar-right">
         <div className="chat-box">
           <div className="messages">
-            <p>
-              <b>{player2Details?.username || "Opponent"}:</b> Good luck!
-            </p>
-            <p>
-              <b>You:</b> Thanks 🚀
-            </p>
+            {chatMessages.length === 0 && (
+              <>
+                <p>
+                  <b>{player2Details?.username || "Opponent"}:</b> Good luck!
+                </p>
+                <p>
+                  <b>You:</b> Thanks 🚀
+                </p>
+              </>
+            )}
+
+            {chatMessages.map((m, idx) => (
+              <p key={idx} className={`chat-message ${m.sender === (user?.username || "You") ? "me" : "them"}`}>
+                <b>{m.sender === (user?.username) ? "You" : m.sender}:</b> {m.text}
+                <small className="chat-ts">{new Date(m.timestamp).toLocaleTimeString()}</small>
+              </p>
+            ))}
           </div>
+
           <div className="chat-input">
-            <input type="text" placeholder="Type your message..." />
-            <button>➤</button>
+            <input
+              type="text"
+              placeholder="Type your message..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") sendChatMessage();
+              }}
+            />
+            <button onClick={sendChatMessage}>➤</button>
           </div>
         </div>
+
 
         <div className="opponent-card">
           <img
@@ -1215,8 +1277,8 @@ const GameBoard = () => {
             {friendStatus === "PENDING"
               ? "Request Pending"
               : friendStatus === "ACCEPTED"
-              ? "Friends"
-              : "Add Friend"}
+                ? "Friends"
+                : "Add Friend"}
           </button>
         </div>
       </div>
