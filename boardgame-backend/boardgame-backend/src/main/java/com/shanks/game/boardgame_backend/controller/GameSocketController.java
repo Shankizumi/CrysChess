@@ -34,6 +34,11 @@ public class GameSocketController {
         Game updatedGame = gameService.processMove(gameId, move);
         messagingTemplate.convertAndSend("/topic/game/" + gameId, updatedGame);
     }
+    @MessageMapping("/game/{gameId}/chat")
+    public void handleChat(@DestinationVariable String gameId, String messageJson) {
+        messagingTemplate.convertAndSend("/topic/game/" + gameId, messageJson);
+    }
+
 
     /**
      * End the game with a winner username
