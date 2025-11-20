@@ -36,7 +36,7 @@ export default function ProfilePage() {
   const [alerts, setAlerts] = useState([]);
 
 
-  
+
   const user = useSelector((state) => state.user.user);
   const { friendList, pendingRequests, loading } = useSelector(
     (state) => state.friends
@@ -98,52 +98,52 @@ export default function ProfilePage() {
   }, [friendList, user.id]);
 
   useEffect(() => {
-  const fetchPendingDetails = async () => {
-    if (!user?.id || !pendingRequests || pendingRequests.length === 0) {
-      setPendingData([]);
-      return;
-    }
+    const fetchPendingDetails = async () => {
+      if (!user?.id || !pendingRequests || pendingRequests.length === 0) {
+        setPendingData([]);
+        return;
+      }
 
-    try {
-      const detailed = await Promise.all(
-        pendingRequests
-          .filter((pr) => pr.friendId === user.id) // only requests **to me**
-          .map(async (pr) => {
-            const otherUserId = pr.userId; // sender
+      try {
+        const detailed = await Promise.all(
+          pendingRequests
+            .filter((pr) => pr.friendId === user.id) // only requests **to me**
+            .map(async (pr) => {
+              const otherUserId = pr.userId; // sender
 
-            try {
-              const userDetails = await userService.getUserById(otherUserId);
-              const avatar = await userService.getProfilePicture(otherUserId).catch(() => null);
+              try {
+                const userDetails = await userService.getUserById(otherUserId);
+                const avatar = await userService.getProfilePicture(otherUserId).catch(() => null);
 
-              return {
-                requestId: pr.id,
-                id: otherUserId,
-                status: pr.status,
-                ...userDetails,
-                avatar,
-              };
-            } catch (err) {
-              console.error("Failed to fetch pending details for id", otherUserId, err);
-              return {
-                requestId: pr.id,
-                id: otherUserId,
-                username: "Unknown",
-                avatar: null,
-                status: pr.status,
-              };
-            }
-          })
-      );
+                return {
+                  requestId: pr.id,
+                  id: otherUserId,
+                  status: pr.status,
+                  ...userDetails,
+                  avatar,
+                };
+              } catch (err) {
+                console.error("Failed to fetch pending details for id", otherUserId, err);
+                return {
+                  requestId: pr.id,
+                  id: otherUserId,
+                  username: "Unknown",
+                  avatar: null,
+                  status: pr.status,
+                };
+              }
+            })
+        );
 
-      setPendingData(detailed);
-    } catch (err) {
-      console.error("Error while fetching pending requests:", err);
-      setPendingData([]);
-    }
-  };
+        setPendingData(detailed);
+      } catch (err) {
+        console.error("Error while fetching pending requests:", err);
+        setPendingData([]);
+      }
+    };
 
-  fetchPendingDetails();
-}, [pendingRequests, user?.id]);
+    fetchPendingDetails();
+  }, [pendingRequests, user?.id]);
 
   // --- other handlers unchanged, small improvement: use requestId when accepting/rejecting ---
   const handleAddFriend = async (friendId) => {
@@ -166,10 +166,10 @@ export default function ProfilePage() {
 
 
   const handleRemoveOrReject = async (friendId) => {
-  await dispatch(removeFriend({ userId: user.id, friendId }));
-  dispatch(fetchFriends(user.id));
-  dispatch(fetchPendingRequests(user.id));
-};
+    await dispatch(removeFriend({ userId: user.id, friendId }));
+    dispatch(fetchFriends(user.id));
+    dispatch(fetchPendingRequests(user.id));
+  };
 
 
   const handleSearch = async () => {
@@ -256,34 +256,34 @@ export default function ProfilePage() {
   };
 
 
-const handlePlayWorld = async () => {
-  try {
-    if (!user || !user.id) {
-      alert("User not logged in!");
-      return;
+  const handlePlayWorld = async () => {
+    try {
+      if (!user || !user.id) {
+        alert("User not logged in!");
+        return;
+      }
+
+      const res = await fetch(`http://localhost:8080/games/find-or-create?userId=${user.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) throw new Error("Failed to create/find game");
+
+      const game = await res.json();
+
+      if (!game?.id) throw new Error("Invalid game returned from server");
+
+      if (game.status === "WAITING") {
+        console.log("Waiting for another player to join…");
+      }
+
+      navigate(`/multiplayer/${game.id}`);
+    } catch (err) {
+      console.error("Error finding match:", err);
+      alert("Failed to start a multiplayer game. Try again!");
     }
-
-    const res = await fetch(`http://localhost:8080/games/find-or-create?userId=${user.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!res.ok) throw new Error("Failed to create/find game");
-
-    const game = await res.json();
-
-    if (!game?.id) throw new Error("Invalid game returned from server");
-
-    if (game.status === "WAITING") {
-      console.log("Waiting for another player to join…");
-    }
-
-    navigate(`/multiplayer/${game.id}`);
-  } catch (err) {
-    console.error("Error finding match:", err);
-    alert("Failed to start a multiplayer game. Try again!");
-  }
-};
+  };
 
 
 
@@ -329,7 +329,8 @@ const handlePlayWorld = async () => {
         </div>
         <div>
           <p className="username">{user?.username || "Guest"}</p>
-          <p className="rank">Rank: {user?.rank || "Unranked"}</p>
+          <p className="rank">  Rank: {user?.currentRank !== undefined ? user.currentRank : "Unranked"}
+          </p>
           <button
             className="btn-outline frdbtn"
             onClick={() => setOpenFriends(true)}
@@ -379,7 +380,7 @@ const handlePlayWorld = async () => {
 
             {activeTab === "friends" && (
               <div className="cardCont">
-                {loading && friendsData.length === 0 ?(
+                {loading && friendsData.length === 0 ? (
                   <p>Loading friends...</p>
                 ) : friendsData.length > 0 ? (
                   friendsData.map((friend) => (
@@ -391,11 +392,11 @@ const handlePlayWorld = async () => {
                       />
                       <div className="friendinfo">
                         <p className="username">{friend.username}</p>
-                        <p className="rank">{friend.rank || "Unranked"}</p>
+                        <p className="rank">Rank :{friend.currentRank || "Unranked"}</p>
                       </div>
                       <button
                         className="btn-outline"
-  onClick={() => handleRemoveOrReject(friend.id)}
+                        onClick={() => handleRemoveOrReject(friend.id)}
 
                       >
                         Remove
@@ -410,7 +411,7 @@ const handlePlayWorld = async () => {
 
             {activeTab === "pending" && (
               <div className="cardCont">
-                {loading && pendingData.length === 0 ?(
+                {loading && pendingData.length === 0 ? (
                   <p>Loading pending requests...</p>
                 ) : pendingData.length > 0 ? (
                   pendingData.map((req) => (
@@ -422,7 +423,7 @@ const handlePlayWorld = async () => {
                       />
                       <div className="friendinfo">
                         <p className="username">{req.username}</p>
-                        <p className="rank">{req.rank || "Unranked"}</p>
+                        <p className="rank">Rank : {req.currentRank || "Unranked"}</p>
                       </div>
                       <button
                         className="btn"
@@ -434,7 +435,7 @@ const handlePlayWorld = async () => {
                       </button>
                       <button
                         className="btn-outline"
-  onClick={() => handleRemoveOrReject(req.id)}
+                        onClick={() => handleRemoveOrReject(req.id)}
 
                       >
                         Reject
@@ -481,10 +482,15 @@ const handlePlayWorld = async () => {
                         src={result.avatar || "https://i.pravatar.cc/70"}
                         alt={result.username}
                         className="avatar-img"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://i.pravatar.cc/70";
+                        }}
                       />
+
                       <div className="friendinfo">
                         <p className="username">{result.username}</p>
-                        <p className="rank">{result.rank || "Unranked"}</p>
+                        <p className="rank">Rank : {result.currentRank || "Unranked"}</p>
                       </div>
                       <button
                         className="btn-outline"
@@ -498,8 +504,8 @@ const handlePlayWorld = async () => {
                         {result.status === "PENDING"
                           ? "Request Pending"
                           : result.status === "ACCEPTED"
-                          ? "Friends"
-                          : "Add Friend"}
+                            ? "Friends"
+                            : "Add Friend"}
                       </button>
                     </div>
                   ))
@@ -558,7 +564,7 @@ const handlePlayWorld = async () => {
                 <div>
                   <p>Wins: {user?.wins || 0}</p>
                   <p>Losses: {user?.losses || 0}</p>
-                  <p>Global Rank: {user?.rank || "N/A"}</p>
+                  <p>Global Rank : {user?.currentRank || "N/A"}</p>
                 </div>
 
                 <div className="profile-pic-wrapper">

@@ -367,29 +367,29 @@ const GameBoard = () => {
   };
 
 
-const sendChatMessage = () => {
-  const text = (chatInput || "").trim();
-  if (!text) return;
+  const sendChatMessage = () => {
+    const text = (chatInput || "").trim();
+    if (!text) return;
 
-  const message = {
-    sender: user?.username || "You",
-    text,
-    timestamp: Date.now(),
-  };
+    const message = {
+      sender: user?.username || "You",
+      text,
+      timestamp: Date.now(),
+    };
 
-  const activeId = gameId || getActiveGameId();
-  if (!activeId) {
-    console.warn("No active game id for chat");
+    const activeId = gameId || getActiveGameId();
+    if (!activeId) {
+      console.warn("No active game id for chat");
+      setChatInput("");
+      return;
+    }
+
+    // send over socket only (remove local echo)
+    sendChat(activeId, message);
+
+    // clear input — UI will update when server echoes the message
     setChatInput("");
-    return;
-  }
-
-  // send over socket only (remove local echo)
-  sendChat(activeId, message);
-
-  // clear input — UI will update when server echoes the message
-  setChatInput("");
-};
+  };
 
   // ----------------- Helpers -----------------
   const createInitialBoard = () => {
@@ -1186,7 +1186,7 @@ const sendChatMessage = () => {
 
         <div className="rank-card">
           <p>Your Rank</p>
-          <h3>#{player1Details?.rank || "----"}</h3>
+          <h3>#{player1Details?.currentRank || "----"}</h3>
           <small>Worldwide</small>
         </div>
 
@@ -1268,7 +1268,7 @@ const sendChatMessage = () => {
             className="opponent-pic"
           />
           <p>{player2Details?.username || "Waiting..."}</p>
-          <small>Rank: #{player2Details?.rank || "----"}</small>
+          <small>Rank: #{player2Details?.currentRank || "----"}</small>
           <button
             className="friend-btn"
             disabled={friendStatus === "PENDING" || friendStatus === "ACCEPTED"}
