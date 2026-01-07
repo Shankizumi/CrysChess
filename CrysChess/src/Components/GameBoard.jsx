@@ -367,29 +367,29 @@ const GameBoard = () => {
   };
 
 
-  const sendChatMessage = () => {
-    const text = (chatInput || "").trim();
-    if (!text) return;
+const sendChatMessage = () => {
+  const text = (chatInput || "").trim();
+  if (!text) return;
 
-    const message = {
-      sender: user?.username || "You",
-      text,
-      timestamp: Date.now(),
-    };
-
-    const activeId = gameId || getActiveGameId();
-    if (!activeId) {
-      console.warn("No active game id for chat");
-      setChatInput("");
-      return;
-    }
-
-    // send over socket only (remove local echo)
-    sendChat(activeId, message);
-
-    // clear input — UI will update when server echoes the message
-    setChatInput("");
+  const message = {
+    sender: user?.username || "You",
+    text,
+    timestamp: Date.now(),
   };
+
+  const activeId = gameId || getActiveGameId();
+  if (!activeId) {
+    console.warn("No active game id for chat");
+    setChatInput("");
+    return;
+  }
+
+  // send over socket only (remove local echo)
+  sendChat(activeId, message);
+
+  // clear input — UI will update when server echoes the message
+  setChatInput("");
+};
 
   // ----------------- Helpers -----------------
   const createInitialBoard = () => {
