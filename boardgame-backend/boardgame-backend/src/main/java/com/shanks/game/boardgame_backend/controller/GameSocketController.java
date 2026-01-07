@@ -1,7 +1,11 @@
 package com.shanks.game.boardgame_backend.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shanks.game.boardgame_backend.dao.service.GameDataService;
 import com.shanks.game.boardgame_backend.dto.entity.Game;
 import com.shanks.game.boardgame_backend.dao.service.GameService;
+import com.shanks.game.boardgame_backend.dto.entity.GameData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -17,6 +21,11 @@ public class GameSocketController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private GameDataService gameDataService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
      * Player joins a game
      */
@@ -30,10 +39,32 @@ public class GameSocketController {
      * Handle player moves (sent as a string)
      */
     @MessageMapping("/game/{gameId}/move")
-    public void handleMove(@DestinationVariable Long gameId, String move) {
-        Game updatedGame = gameService.processMove(gameId, move);
-        messagingTemplate.convertAndSend("/topic/game/" + gameId, updatedGame);
+    public void handleMove(@DestinationVariable Long gameId, String payload) {
+        try {
+            // payload expected: {"playerId":123, "board": {...}, "turn":"blue"}
+            JsonNode node = objectMapper.readTree(payload);
+            Long playerId = node.has("playerId") ? node.get("playerId").asLong() : null;
+            JsonNode boardNode = node.get("board");
+            String turn = node.has("turn") ? node.get("turn").asText() : null;
+            if (playerId == null || boardNode == null) {
+                throw new RuntimeException("Invalid move payload");
+            }
+            String boardJson = objectMapper.writeValueAsString(boardNode);
+
+            // process and broadcast (service will broadcast)
+            GameData updated = gameDataService.processSocketMove(gameId, playerId, boardJson, turn);
+
+            // (Optional) also send to topic if service didn't
+            // messagingTemplate.convertAndSend("/topic/game/" + gameId, updated);
+
+        } catch (Exception ex) {
+            // log exception; consider sending a user-facing error message
+            ex.printStackTrace();
+        }
     }
+
+
+
     @MessageMapping("/game/{gameId}/chat")
     public void handleChat(@DestinationVariable String gameId, String messageJson) {
         messagingTemplate.convertAndSend("/topic/game/" + gameId, messageJson);
