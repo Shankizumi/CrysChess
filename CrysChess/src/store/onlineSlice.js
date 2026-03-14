@@ -1,17 +1,26 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const onlineSlice = createSlice({
-  name: "onlineStatus",
+  name: "online",
   initialState: {
-    users: {}, // { userId: true/false }
+    users: {}
   },
   reducers: {
-    setOnlineStatus: (state, action) => {
-      const { userId, online } = action.payload;
-      state.users[userId] = online;
-    }
+setOnlineStatus: (state, action) => {
+  const { userId, online } = action.payload;
+
+  // 🚫 BLOCK GARBAGE
+  if (userId === undefined || userId === null || userId === -1) {
+    console.warn("🚫 Ignoring invalid presence update:", action.payload);
+    return;
+  }
+
+  state.users[userId] = online;
+},
+
   }
 });
+
 
 export const { setOnlineStatus } = onlineSlice.actions;
 export default onlineSlice.reducer;

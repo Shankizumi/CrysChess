@@ -6,7 +6,7 @@
   --txt: #e9e9f1;
   --muted: #b7b7c7;
 
-  /* accents styled like your game UI */
+  /* accents styled  */
   --accent-a: #7c3aed;   /* violet */
   --accent-b: #ff2d7a;   /* pink */
   --accent-green: #22c55e;
@@ -21,7 +21,7 @@ body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI
 
 .auth-page{
   position: relative;
-  min-height: 100svh; /* mobile safe viewport */
+  min-height: 100svh; 
   width: 100%;
   display: grid;
   place-items: center;
@@ -31,7 +31,6 @@ body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI
   background-size: cover;
 }
 
-/* Background with guaranteed fallback + local image */
 .auth-page::before{
   content:"";
   position: absolute;
@@ -46,7 +45,6 @@ body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI
   z-index: 0;
 }
 
-/* subtle aurora flares like your UI */
 .auth-page::after{
   content:"";
   position: absolute; inset: -20vmax;
@@ -89,7 +87,6 @@ body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI
   color: #0b0c10 !important;
   text-shadow: none !important;
   filter: none !important;
-  /* dark text for light theme */
 }
 
 /* Tabs */

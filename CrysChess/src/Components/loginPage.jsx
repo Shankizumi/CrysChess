@@ -76,10 +76,8 @@ export default function LoginPage() {
         // 🔹 Fetch full user details
         const fullUserData = await userService.getUserById(loginRes.id);
 
-        // 🔹 Save to Redux instead of localStorage
         dispatch(setUser(fullUserData));
 
-        // 🔹 Navigate to profile
         navigate("/profilePage");
       } else {
         // 🔹 Register API

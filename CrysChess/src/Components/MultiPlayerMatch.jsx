@@ -14,12 +14,13 @@ import "./MultiPlayerMatch.css";
 import { useDispatch } from "react-redux";
 import { setGameId, setGameData } from "../store/gameSlice";
 import WinnerModal from "./WinnerModal";
+import { useNavigate } from "react-router-dom";
 
 export default function MultiPlayerMatch() {
   const { gameId } = useParams();
   const username = localStorage.getItem("username") || "Guest";
   const userId = localStorage.getItem("userId");
-
+const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -45,7 +46,7 @@ export default function MultiPlayerMatch() {
     console.log("🌐 Auto-joining existing game:", gameId);
     dispatch(setGameId(gameId));
 
-    connectSocket(gameId, (updatedGame) => {
+    connectSocket(userId, gameId, (updatedGame) => {
       console.log("📡 [SOCKET UPDATE]", updatedGame);
 
       setGame(updatedGame);
@@ -96,7 +97,7 @@ export default function MultiPlayerMatch() {
       dispatch(setGameId(createdGame.id));
       dispatch(setGameData(createdGame));
 
-      connectSocket(createdGame.id, (updatedGame) => {
+      connectSocket(userId, createdGame.id, (updatedGame) => {
         console.log("📡 [SOCKET UPDATE - FIND MATCH]", updatedGame);
 
         setGame(updatedGame);
@@ -192,10 +193,10 @@ export default function MultiPlayerMatch() {
         <div className="waiting-screen">
           <button
             className={`find-btn ${loading ? "hidden" : "visible"}`}
-            onClick={handleFindMatch}
+  onClick={() => window.location.reload()}
             disabled={loading}
           >
-            🔍 {loading ? "Finding Match..." : "Please Wait..."}
+            🔍 {loading ? "Finding Match..." : "Click To Join the Match"}
           </button>
 
           {loading && (

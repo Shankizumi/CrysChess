@@ -2,10 +2,14 @@ import { useState, useEffect } from "react";
 import "./ProfilePage.css";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import userService from "../Services/userService"; // ensure correct path
+import userService from "../Services/userService"; 
 import { setUser, logout } from "../store/userSlice";
 import LogoutConfirmModal from "../Components/LogoutConfirmModal";
 import Alert from "./Alert";
+import { setOnlineStatus } from "../store/onlineSlice";
+import { registerPresenceListener, connectSocket } from "../Services/socketService";
+import { disconnectSocket } from "../Services/socketService";
+
 
 import {
   fetchFriends,
@@ -23,8 +27,8 @@ export default function ProfilePage() {
   const [openFriends, setOpenFriends] = useState(false);
   const [activeTab, setActiveTab] = useState("friends");
   const [openSearch, setOpenSearch] = useState(false);
-  const [friendsData, setFriendsData] = useState([]); // enriched friend user objects
-  const [pendingData, setPendingData] = useState([]); // enriched pending objects (contains requestId)
+  const [friendsData, setFriendsData] = useState([]); 
+  const [pendingData, setPendingData] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -36,8 +40,16 @@ export default function ProfilePage() {
   const [alerts, setAlerts] = useState([]);
 
 
+    const user = useSelector((state) => state.user.user);
+const userId = user?.id;
 
-  const user = useSelector((state) => state.user.user);
+    
+const onlineUsers = useSelector((state) => state.online.users);
+console.log("🟢 ONLINE USERS MAP:", onlineUsers);
+
+
+
+  
   const { friendList, pendingRequests, loading } = useSelector(
     (state) => state.friends
   );
@@ -48,6 +60,28 @@ export default function ProfilePage() {
     refreshProfilePic();
   }, [user?.id]);
 
+
+useEffect(() => {
+  if (!userId) {
+    console.log("⏳ Skipping socket connect — userId not ready");
+    return;
+  }
+
+  console.log("🔗 Connecting socket with userId:", userId);
+  connectSocket(userId);
+
+  const unsubscribe = registerPresenceListener(({ userId, online }) => {
+    dispatch(setOnlineStatus({ userId, online }));
+  });
+
+  return () => {
+    if (unsubscribe) unsubscribe();
+  };
+}, [userId, dispatch]);
+
+
+
+
   // openFriends toggles fetching of lists from Redux
   useEffect(() => {
     if (openFriends && user?.id) {
@@ -56,7 +90,6 @@ export default function ProfilePage() {
     }
   }, [openFriends, user?.id, dispatch]);
 
-  // === FIXED: build friendsData from friendList (use userId/friendId, not request id) ===
   useEffect(() => {
     const fetchFriendDetails = async () => {
       if (!friendList || friendList.length === 0) {
@@ -145,7 +178,6 @@ export default function ProfilePage() {
     fetchPendingDetails();
   }, [pendingRequests, user?.id]);
 
-  // --- other handlers unchanged, small improvement: use requestId when accepting/rejecting ---
   const handleAddFriend = async (friendId) => {
     try {
       await dispatch(sendFriendRequest({ userId: user.id, friendId })).unwrap();
@@ -286,7 +318,6 @@ export default function ProfilePage() {
   };
 
 
-
   return (
     <div className="page-container">
       {/* Search Bar + Logout */}
@@ -383,26 +414,42 @@ export default function ProfilePage() {
                 {loading && friendsData.length === 0 ? (
                   <p>Loading friends...</p>
                 ) : friendsData.length > 0 ? (
-                  friendsData.map((friend) => (
-                    <div key={friend.id} className="friendcardProfile">
-                      <img
-                        src={friend.avatar || "https://i.pravatar.cc/90"}
-                        alt={friend.username}
-                        className="friendavatar"
-                      />
-                      <div className="friendinfo">
-                        <p className="username">{friend.username}</p>
-                        <p className="rank">Rank :{friend.currentRank || "Unranked"}</p>
-                      </div>
-                      <button
-                        className="btn-outline"
-                        onClick={() => handleRemoveOrReject(friend.id)}
+friendsData.map((friend) => {
+  const isOnline = !!onlineUsers[friend.id]; // ✅ ADD THIS LINE
+  console.log("Friend:", friend.username, "Online:", isOnline); // DEBUG LOG
+    console.log(
+    "Friend:", friend.username,
+    "Friend ID:", friend.id,
+    "Online:", isOnline
+  );
 
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))
+  return (
+    <div key={friend.id} className="friendcardProfile">
+      <img
+        src={friend.avatar || "https://i.pravatar.cc/90"}
+        alt={friend.username}
+  className={`friendavatar ${isOnline ? "online" : ""}`}
+      />
+
+      <div className="friendinfo">
+        <p className="username">{friend.username}</p>
+        <p className="rank">
+          Rank : {friend.currentRank || "Unranked"}
+        </p>
+
+        {/* <span className={isOnline ? "online-dot" : "offline-dot"} /> */}
+      </div>
+
+      <button
+        className="btn-outline"
+        onClick={() => handleRemoveOrReject(friend.id)}
+      >
+        Remove
+      </button>
+    </div>
+  );
+})
+
                 ) : (
                   <p className="st">No friends yet 😢</p>
                 )}
@@ -665,6 +712,8 @@ export default function ProfilePage() {
         onCancel={() => setLogoutModalOpen(false)}
         onConfirm={() => {
           dispatch(logout());
+          disconnectSocket();
+          localStorage.clear();
           persistor.purge();
           navigate("/login");
         }}

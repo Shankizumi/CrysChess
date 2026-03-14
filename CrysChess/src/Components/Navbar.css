@@ -9,21 +9,20 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0.75rem 1rem; /* optional, for spacing */
+  padding: 0.75rem 1rem;
   /* backdrop-filter: blur(4px); optional frosted glass effect */
 
-      background: rgba(0, 0, 0, 0.35);  /* translucent dark bg */
+      background: rgba(0, 0, 0, 0.35);  
   padding: 0.3rem 0.6rem;
   border-radius: 8px;
 }
 .logo {
-  height: 70px;   /* Adjust size to fit */
-  width: auto;    /* Keeps aspect ratio */
+  height: 70px;   
+  width: auto;   
   object-fit: contain;
   margin-left: 20px;
 }
 
-/* Brand — gradient glow like the game panels */
 .brandnav {
   display: flex;
   justify-content: center;

@@ -19,6 +19,7 @@ function App() {
         <Route path="/profilePage" element={<ProfilePage />} />
         <Route path="/game" element={<GameBoard />} />
         <Route path="/multiplayer/:gameId" element={<MultiPlayerMatch />} />
+        
       </Routes>
     </>
   );

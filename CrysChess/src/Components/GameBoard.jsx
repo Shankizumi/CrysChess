@@ -301,7 +301,7 @@ const GameBoard = () => {
     const loadStatus = async () => {
       try {
         const res = await FriendService.getFriendStatus(user.id, opponent.id);
-        setFriendStatus(res.data); // ✅ PENDING / ACCEPTED / NONE
+        setFriendStatus(res.data); //  PENDING / ACCEPTED / NONE
       } catch (err) {
         console.error("Failed to load friend status:", err);
       }
@@ -497,11 +497,13 @@ const sendChatMessage = () => {
    * - animate enemy removals, then apply removals + place spawns
    */
 
-  useEffect(() => {
-    connectSocket(gameId, (updatedGame) => {
-      setBoard(JSON.parse(updatedGame.boardState));
-    });
-  }, []);
+useEffect(() => {
+  if (!user?.id || !gameId) return;
+
+  connectSocket(user.id, gameId, (updatedGame) => {
+    setBoard(JSON.parse(updatedGame.boardState));
+  });
+}, [user?.id, gameId]);
 
   const checkAndDestroy = (newBoard) => {
     const updated = newBoard.map((r) => [...r]);

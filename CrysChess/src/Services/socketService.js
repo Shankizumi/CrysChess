@@ -1,5 +1,8 @@
 import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
+import { store } from "../store/store";
+import { setOnlineStatus } from "../store/onlineSlice";
+
 
 let stompClient = null;
 let connected = false;
@@ -11,6 +14,13 @@ let activeGameId = null;
 export const getActiveGameId = () => activeGameId;
 // chat listener registry (no props / no Redux required)
 const chatListeners = [];
+
+
+let presenceCallback = null;
+
+export const registerPresenceListener = (cb) => {
+  presenceCallback = cb;
+};
 
 /**
  * Register/unregister chat listeners (components call these directly)
@@ -35,7 +45,7 @@ export const unregisterChatListener = (listener) => {
 /**
  * Connects to the WebSocket server and subscribes to game updates
  */
-export const connectSocket = (gameId, callback) => {
+export const connectSocket = (userId, gameId = null, callback = () => {}) => {
 
   if (stompClient && connected && activeGameId === gameId) {
   console.log("⚠️ Already subscribed to this game topic.");
@@ -51,11 +61,14 @@ export const connectSocket = (gameId, callback) => {
     return;
   }
 
-  const socket = new SockJS("http://localhost:8080/ws-game"); // ✅ match backend endpoint
+const socket = new SockJS(`http://localhost:8080/ws?userId=${userId}`);
+
   stompClient = Stomp.over(() => socket);
 
   stompClient.reconnect_delay = 5000;
   stompClient.debug = () => {}; // silence noisy logs
+
+  
 
   stompClient.connect(
     {},
@@ -69,12 +82,36 @@ export const connectSocket = (gameId, callback) => {
 if (!stompClient._hasSubscribed) {
   stompClient._hasSubscribed = true;
 
+  stompClient.subscribe("/topic/presence", (message) => {
+  if (!message.body) return;
+
+  const data = JSON.parse(message.body);
+  presenceCallback?.(data);
+});
+
+stompClient.subscribe("/topic/friend-status", (message) => {
+  if (!message.body) return;
+
+  const data = JSON.parse(message.body);
+    console.log("🔥 RAW PRESENCE MESSAGE:", data); // 👈 IMPORTANT
+
+
+  if (data.type === "STATUS") {
+    store.dispatch(
+      setOnlineStatus({
+        userId: data.userId,
+        online: data.online,
+      })
+    );
+  }
+});
+
+
   stompClient.subscribe(`/topic/game/${gameId}`, (message) => {
     if (!message.body) return;
 
     const data = JSON.parse(message.body);
-
-    if (data.type === "CHAT" && data.message) {
+console.log("📡 GAME SOCKET MESSAGE:", data.status);    if (data.type === "CHAT" && data.message) {
       chatListeners.forEach((fn) => fn(data.message));
       return;
     }
