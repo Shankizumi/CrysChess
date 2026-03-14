@@ -11,12 +11,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws-game")
-                .setAllowedOriginPatterns("*")
-                .setHandshakeHandler(new UserHandshakeHandler())   // ✅ added
-                .withSockJS();
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:5173")
+                .setAllowedOriginPatterns("*")
+                .setHandshakeHandler(new UserHandshakeHandler())
                 .withSockJS();
 
     }

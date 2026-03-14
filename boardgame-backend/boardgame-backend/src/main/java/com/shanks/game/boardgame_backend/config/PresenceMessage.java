@@ -5,10 +5,15 @@ public class PresenceMessage {
     private Long userId;
     private boolean online;
 
+    public PresenceMessage() {}
+
+
     public PresenceMessage(Long userId, boolean online) {
         this.userId = userId;
         this.online = online;
     }
+
+
 
     public Long getUserId() {
         return userId;
